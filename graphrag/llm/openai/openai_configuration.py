@@ -271,7 +271,7 @@ class OpenAIConfiguration(Hashable, LLMConfig):
 
     def __str__(self) -> str:
         """Str method definition."""
-        return json.dumps(self.raw_config, indent=4)
+        return json.dumps(self.raw_config, indent=4, ensure_ascii=False)
 
     def __repr__(self) -> str:
         """Repr method definition."""

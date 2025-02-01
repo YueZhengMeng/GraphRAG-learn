@@ -49,9 +49,9 @@ async def snapshot_rows(
             if fmt.format == "json":
                 await storage.set(
                     f"{row_name}.{extension}",
-                    json.dumps(row[column])
+                    json.dumps(row[column], ensure_ascii=False)
                     if column is not None
-                    else json.dumps(row.to_dict()),
+                    else json.dumps(row.to_dict(), ensure_ascii=False),
                 )
             elif fmt.format == "text":
                 if column is None:

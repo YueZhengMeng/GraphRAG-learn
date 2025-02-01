@@ -35,7 +35,7 @@ class LanceDBVectorStore(BaseVectorStore):
                 "id": document.id,
                 "text": document.text,
                 "vector": document.vector,
-                "attributes": json.dumps(document.attributes),
+                "attributes": json.dumps(document.attributes, ensure_ascii=False),
             }
             for document in documents
             if document.vector is not None

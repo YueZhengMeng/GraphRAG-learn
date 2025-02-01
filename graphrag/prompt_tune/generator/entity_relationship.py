@@ -60,6 +60,6 @@ async def generate_entity_relationship_examples(
     responses = await asyncio.gather(*tasks)
 
     return [
-        json.dumps(response.json or "") if json_mode else str(response.output)
+        json.dumps(response.json or "", ensure_ascii=False) if json_mode else str(response.output)
         for response in responses
     ]

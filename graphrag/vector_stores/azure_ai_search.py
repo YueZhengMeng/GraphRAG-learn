@@ -130,7 +130,7 @@ class AzureAISearch(BaseVectorStore):
                 "id": doc.id,
                 "vector": doc.vector,
                 "text": doc.text,
-                "attributes": json.dumps(doc.attributes),
+                "attributes": json.dumps(doc.attributes, ensure_ascii=False),
             }
             for doc in documents
             if doc.vector is not None

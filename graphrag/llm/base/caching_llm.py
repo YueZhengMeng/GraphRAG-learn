@@ -56,7 +56,7 @@ class CachingLLM(LLM[TIn, TOut], Generic[TIn, TOut]):
         self._on_cache_miss = fn or _noop_cache_fn
 
     def _cache_key(self, input: TIn, name: str | None, args: dict) -> str:
-        json_input = json.dumps(input)
+        json_input = json.dumps(input, ensure_ascii=False)
         tag = (
             f"{name}-{self._operation}-v{_cache_strategy_version}"
             if name is not None

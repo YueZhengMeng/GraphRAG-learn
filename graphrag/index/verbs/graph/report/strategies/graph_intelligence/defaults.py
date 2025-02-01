@@ -22,5 +22,5 @@ MOCK_RESPONSES = [
                 "explanation": "<insight_2_explanation",
             },
         ],
-    })
+    }, ensure_ascii=False)
 ]
