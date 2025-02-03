@@ -37,6 +37,8 @@ class ParquetTableEmitter(TableEmitter):
         filename = f"{name}.parquet"
         log.info("emitting parquet table %s", filename)
         try:
+            # 将dataframe转换为parquet格式的数据
+            # 调用FilePipelineStorage的set方法，保存到指定的位置
             await self._storage.set(filename, data.to_parquet())
         except ArrowTypeError as e:
             log.exception("Error while emitting parquet table")

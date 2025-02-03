@@ -73,10 +73,11 @@ def load_workflows(
 
         # reference: name, config
         config = reference.config
-        """
-        create_workflow:
-            根据workflow name 创建steps：{verb， args，input}
-        """
+
+        # 核心逻辑
+        # 根据workflow name创建工作流
+        # workflow对象的核心是workflow._schema['name']和workflow._schema['steps']
+        # 详细注释见create_workflow函数内容
         workflow = create_workflow(
             name or "MISSING NAME!",
             reference.steps,
@@ -87,6 +88,7 @@ def load_workflows(
         workflow_graph[name] = WorkflowToRun(workflow, config=config or {})
 
     # Backfill any missing workflows
+    # 检查每个workflow的拓扑前置依赖，如果前置依赖workflow不存在，则创建该前置依赖workflow
     for name in list(workflow_graph.keys()):
         workflow = workflow_graph[name]
         deps = [
@@ -109,6 +111,7 @@ def load_workflows(
                 )
 
     # Run workflows in order of dependencies
+    # 如果某个workflow的前置依赖workflow不存在，则删除该前置依赖workflow
     def filter_wf_dependencies(name: str) -> list[str]:
         externals = [
             e.replace("workflow:", "")
@@ -117,7 +120,9 @@ def load_workflows(
         return [e for e in externals if e in workflow_graph]
 
     task_graph = {name: filter_wf_dependencies(name) for name in workflow_graph}
+    # 拓扑排序
     workflow_run_order = topological_sort(task_graph)
+    # 根据拓扑排序结果，获取workflow的运行顺序
     workflows = [workflow_graph[name] for name in workflow_run_order]
     log.info("Workflow Run Order: %s", workflow_run_order)
     return LoadWorkflowResult(workflows=workflows, dependencies=task_graph)
@@ -132,11 +137,23 @@ def create_workflow(
     memory_profile: bool = False,
 ) -> Workflow:
     """Create a workflow from the given config."""
+    # 核心逻辑
+    # additional_workflows是所有的workflow，包括默认的和用户自定义的
+    # 默认的workflow汇总见./default_workflows.py
+    # 具体每个默认workflow的源码见./v1/xxx.py
     additional_workflows = {
         **_default_workflows,
         **(additional_workflows or {}),
     }
+    # 核心逻辑
+    # 每个具体workflow的源码中，都用字典类型定义了一系列步骤（step），保存在一个列表中
+    # step的格式为{"verb": "xxx", "args": {"xxx": "xxx"}, "input": {"xxx": "xxx"},"enabled": "xxx", ......}
+    # 其中verb是datashaper库中的注册的函数名。该库会根据verb字段，自动调度@verb装饰器注册的函数。
+    # 具体函数源码见graphrag/index/verbs/xxx.py
+    # _get_steps_for_workflow函数中，会根据workflow name，取出该workflow的steps
+    # 并根据config装填参数。其中部分step会根据条件被设置为disabled
     steps = steps or _get_steps_for_workflow(name, config, additional_workflows)
+    # _remove_disabled_steps会过滤掉该workflow中disabled的步骤
     steps = _remove_disabled_steps(steps)
     return Workflow(
         verbs=additional_verbs or {},

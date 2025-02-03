@@ -86,6 +86,8 @@ def index_cli(
     run_id = resume or time.strftime("%Y%m%d-%H%M%S")
     _enable_logging(root, run_id, verbose)
     progress_reporter = _get_progress_reporter(reporter)
+    # 核心逻辑
+    # 如果是初始化项目，则执行初始化操作，完成后退出
     if init:
         _initialize_project_at(root, progress_reporter)
         sys.exit(0)
@@ -94,6 +96,9 @@ def index_cli(
             root, config, verbose, dryrun or False, progress_reporter
         )
     else:
+        # 核心逻辑
+        # config=None，overlay_defaults=False，进入这里触发_create_default_config
+        # 读取根目录下的settings.yaml文件，并搭建整个创建索引的工作流
         pipeline_config: str | PipelineConfig = config or _create_default_config(
             root, None, verbose, dryrun or False, progress_reporter
         )
@@ -118,6 +123,12 @@ def index_cli(
     encountered_errors = False
 
     def _run_workflow_async() -> None:
+        """
+        1. 注册信号处理函数，用于处理SIGINT和SIGHUP信号
+        2. 创建一个异步任务，用于执行run_pipeline_with_config函数
+        3. 如果当前系统是Linux，则使用uvloop库来优化异步IO操作
+        4. 创建一个事件循环，执行异步任务
+        """
         import signal
 
         def handle_signal(signum, _):
@@ -135,6 +146,8 @@ def index_cli(
             signal.signal(signal.SIGHUP, handle_signal)
 
         async def execute():
+            """封装协程task"""
+            # 核心逻辑
             nonlocal encountered_errors
             async for output in run_pipeline_with_config(
                 pipeline_config,
@@ -158,22 +171,30 @@ def index_cli(
                 progress_reporter.info(str(output.result))
 
         if platform.system() == "Windows":
-            import nest_asyncio  # type: ignore Ignoring because out of windows this will cause an error
+            # 核心逻辑
+            # 如果当前系统是Windows，则使用nest_asyncio库来执行异步IO操作
+            # 不是Windows平台会报错
+            import nest_asyncio  # type ignore Ignoring because out of windows this will cause an error
 
             nest_asyncio.apply()
             loop = asyncio.get_event_loop()
             loop.run_until_complete(execute())
         elif sys.version_info >= (3, 11):
-            import uvloop  # type: ignore Ignoring because on windows this will cause an error
+            # 如果当前系统是Linux且Python版本大于等于3.11，则使用uvloop库来优化异步IO操作
+            # 不是Linux平台，则无法安装uvloop库
+            import uvloop  # type ignore Ignoring because on windows this will cause an error
 
-            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:  # type: ignore Ignoring because minor versions this will throw an error
+            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:  # type ignore Ignoring because minor versions this will throw an error
                 runner.run(execute())
         else:
-            import uvloop  # type: ignore Ignoring because on windows this will cause an error
+            # 如果当前系统是Linux且Python版本小于3.11，则使用uvloop库来执行异步IO操作
+            # 不是Linux平台，则无法安装uvloop库
+            import uvloop  # type ignore Ignoring because on windows this will cause an error
 
             uvloop.install()
             asyncio.run(execute())
-
+    # 核心逻辑
+    # 异步并发执行创建索引工作流
     _run_workflow_async()
     progress_reporter.stop()
     if encountered_errors:
@@ -188,7 +209,8 @@ def index_cli(
 
 
 def _initialize_project_at(path: str, reporter: ProgressReporter) -> None:
-    """Initialize the project at the given path."""
+    """初始化项目，并写入默认配置和prompts"""
+    # 核心逻辑
     reporter.info(f"Initializing project at {path}")
     root = Path(path)
     if not root.exists():
@@ -241,6 +263,7 @@ def _create_default_config(
 ) -> PipelineConfig:
     """Overlay default values on an existing config or create a default config if none is provided."""
     if config and not Path(config).exists():
+        # 指定了config路径但是文件不存在
         msg = f"Configuration file {config} does not exist"
         raise ValueError
 
@@ -249,6 +272,10 @@ def _create_default_config(
         raise ValueError(msg)
 
     # parameters = GraphRagConfig()
+    # 核心逻辑
+    # 读取指定路径的配置文件，或者根目录下的配置文件
+    # 都没有，则创建默认配置
+    # 在本教程中，这里会读取根目录下的settings.yaml文件
     parameters = _read_config_parameters(root, config, reporter)
     log.info(
         "using default configuration: %s",
@@ -257,17 +284,21 @@ def _create_default_config(
 
     if verbose or dryrun:
         reporter.info(f"Using default configuration: {redact(parameters.model_dump())}")
+    # 核心逻辑
+    # 根据配置，搭建整个创建索引的工作流
     result = create_pipeline_config(parameters, verbose)
     if verbose or dryrun:
         reporter.info(f"Final Config: {redact(result.model_dump())}")
-
+    # dryrun用于测试配置是否正确，不会执行任何工作流
     if dryrun:
         reporter.info("dry run complete, exiting...")
         sys.exit(0)
+    # 返回搭建完成的工作流
     return result
 
 
 def _read_config_parameters(root: str, config: str | None, reporter: ProgressReporter):
+    """如果root目录下存在yaml或json格式的config文件则读取，否则返回默认配置"""
     _root = Path(root)
     settings_yaml = (
         Path(config)
@@ -288,6 +319,9 @@ def _read_config_parameters(root: str, config: str | None, reporter: ProgressRep
             import yaml
 
             data = yaml.safe_load(file)
+            # 核心逻辑
+            # 进入这个函数，读取根目录下的settings.yaml文件
+            # 根据配置文件的内容，创建一个GraphRagConfig对象并返回
             return create_graphrag_config(data, root)
 
     if settings_json.exists():

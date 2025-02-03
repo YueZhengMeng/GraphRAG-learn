@@ -18,6 +18,7 @@ from .create_pipeline_config import create_pipeline_config
 def load_pipeline_config(config_or_path: str | PipelineConfig) -> PipelineConfig:
     """Load a pipeline config from a file path or a config object."""
     if isinstance(config_or_path, PipelineConfig):
+        # 本教程中，触发这里
         config = config_or_path
     elif config_or_path == "default":
         config = create_pipeline_config(create_graphrag_config(root_dir="."))
@@ -37,7 +38,7 @@ def load_pipeline_config(config_or_path: str | PipelineConfig) -> PipelineConfig
         config = PipelineConfig.model_validate(config)
         if not config.root_dir:
             config.root_dir = str(Path(config_or_path).parent.resolve())
-
+    # 本教程中，不会触发
     if config.extends is not None:
         if isinstance(config.extends, str):
             config.extends = [config.extends]
@@ -48,7 +49,7 @@ def load_pipeline_config(config_or_path: str | PipelineConfig) -> PipelineConfig
                 **json.loads(config.model_dump_json(exclude_unset=True)),
             }
             config = PipelineConfig.model_validate(merged_config)
-
+    # 本教程中相当于原样返回
     return config
 
 

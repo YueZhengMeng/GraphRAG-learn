@@ -119,7 +119,8 @@ def create_pipeline_config(settings: GraphRagConfig, verbose=False) -> PipelineC
         settings.claim_extraction.enabled
         and create_final_covariates not in skip_workflows
     )
-
+    # 核心逻辑
+    # 搭建整个创建索引的工作流
     result = PipelineConfig(
         root_dir=settings.root_dir,
         input=_get_pipeline_input_config(settings),
@@ -136,6 +137,7 @@ def create_pipeline_config(settings: GraphRagConfig, verbose=False) -> PipelineC
     )
 
     # Remove any workflows that were specified to be skipped
+    # 去掉被指定需要跳过的工作流
     log.info("skipping workflows %s", ",".join(skip_workflows))
     result.workflows = [w for w in result.workflows if w.name not in skip_workflows]
     return result

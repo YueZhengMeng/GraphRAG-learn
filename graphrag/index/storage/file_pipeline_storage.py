@@ -116,6 +116,7 @@ class FilePipelineStorage(PipelineStorage):
         async with aiofiles.open(
             join_path(self._root_dir, key), cast(Any, write_type), encoding=encoding
         ) as f:
+            # 保存文件
             await f.write(value)
 
     async def has(self, key: str) -> bool:

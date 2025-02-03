@@ -527,7 +527,8 @@ def create_graphrag_config(
 
         encoding_model = reader.str(Fragment.encoding_model) or defs.ENCODING_MODEL
         skip_workflows = reader.list("skip_workflows") or []
-
+    # 核心逻辑
+    # 返回实例化完成的配置实例
     return GraphRagConfig(
         root_dir=root_dir,
         llm=llm_model,

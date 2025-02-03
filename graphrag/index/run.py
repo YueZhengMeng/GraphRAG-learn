@@ -104,9 +104,13 @@ async def run_pipeline_with_config(
         log.info("Running pipeline with config %s", config_or_path)
     else:
         log.info("Running pipeline")
-
+    # 核心逻辑
+    # 获取运行id
     run_id = run_id or time.strftime("%Y%m%d-%H%M%S")
+    # 本教程中，config_or_path变量已经是PipelineConfig类型
+    # load_pipeline_config函数会原样返回
     config = load_pipeline_config(config_or_path)
+    # 将config中的路径模版占位符替换为真实的工作路径
     config = _apply_substitutions(config, run_id)
     root_dir = config.root_dir
 
@@ -136,7 +140,8 @@ async def run_pipeline_with_config(
         config: PipelineInputConfigTypes | None,
     ) -> list[PipelineWorkflowStep] | None:
         return config.post_process if config is not None else None
-
+    # 核心逻辑
+    # 根据config创建各个组件
     progress_reporter = progress_reporter or NullProgressReporter()
     storage = storage or _create_storage(config.storage)
     cache = cache or _create_cache(config.cache)
@@ -150,7 +155,8 @@ async def run_pipeline_with_config(
     if dataset is None:
         msg = "No dataset provided!"
         raise ValueError(msg)
-
+    # 核心逻辑
+    # 基于协程执行工作流
     async for table in run_pipeline(
         workflows=workflows,
         dataset=dataset,
@@ -218,9 +224,8 @@ async def run_pipeline(
             "Error emitting table", e, s, d
         ),
     )
-    """
-    创建steps，创建dependency，拓扑排序
-    """
+    # 核心逻辑
+    # 实例化创建工作流，并通过拓扑排序生成工作流之间的依赖关系
     loaded_workflows = load_workflows(
         workflows,
         additional_verbs=additional_verbs,
@@ -287,13 +292,16 @@ async def run_pipeline(
     async def emit_workflow_output(workflow: Workflow) -> pd.DataFrame:
         output = cast(pd.DataFrame, workflow.output())
         for emitter in emitters:
+            # 调用ParquetTableEmitter的emit方法，将工作流的运行结果保存到本地文件中
             await emitter.emit(workflow.name, output)
         return output
 
+    # 核心逻辑
+    # 输入数据后处理
     dataset = await _run_post_process_steps(
         input_post_process_steps, dataset, context, callbacks
     )
-
+    # 验证数据集格式是否正确，应为pd.DataFrame
     # Make sure the incoming data is valid
     _validate_dataset(dataset)
 
@@ -301,9 +309,11 @@ async def run_pipeline(
     stats.num_documents = len(dataset)
     last_workflow = "input"
 
+    # 以下try块全都是核心逻辑
     try:
+        # 记录运行统计信息到storage组件中
         await dump_stats()
-
+        # 依次执行工作流
         for workflow_to_run in workflows_to_run:
             # Try to flush out any intermediate dataframes
             gc.collect()
@@ -313,7 +323,7 @@ async def run_pipeline(
             last_workflow = workflow_name
 
             log.info("Running workflow: %s...", workflow_name)
-
+            # 如果是恢复运行，且工作流结果已经存在，则跳过该工作流
             if is_resume_run and await storage.has(
                 f"{workflow_to_run.workflow.name}.parquet"
             ):
@@ -321,16 +331,24 @@ async def run_pipeline(
                 continue
 
             stats.workflows[workflow_name] = {"overall": 0.0}
+            # 基于拓扑排序，读取当前工作流的前置依赖的结果数据，并注入到当前工作流中
             await inject_workflow_data_dependencies(workflow)
 
             workflow_start_time = time.time()
+            # 实际执行工作流，获取工作流运行结果
+            # result是WorkflowRunResult类型的对象，主要内容WorkflowRunResult.verb_timings是VerbTiming类型的列表，记录了工作流的运行统计信息
+            # 工作流的运行结果数据，需要用workflow.output()函数获取
             result = await workflow.run(context, callbacks)
+            # 记录当前工作流的运行统计信息
             await write_workflow_stats(workflow, result, workflow_start_time)
 
             # Save the output from the workflow
+            # 获取工作流的运行结果，并且保存到本地文件中
             output = await emit_workflow_output(workflow)
+            # 返回工作流的运行结果
             yield PipelineRunResult(workflow_name, output, None)
             output = None
+            # 释放工作流的内存资源
             workflow.dispose()
             workflow = None
 
