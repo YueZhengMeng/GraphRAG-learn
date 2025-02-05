@@ -40,6 +40,7 @@ async def run_gi(
     llm = load_llm("entity_extraction", llm_type, reporter, pipeline_cache, llm_config)
 
     # llm() -> __call__ -> execute_llm() -> 调用大模型接口
+    # execute_llm函数源码在graphrag/llm/openai/openai_chat_llm.py
     return await run_extract_entities(llm, docs, entity_types, reporter, args)
 
 

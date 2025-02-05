@@ -135,8 +135,15 @@ async def entity_extract(
     log.debug("entity_extract strategy=%s", strategy)
     if entity_types is None:
         entity_types = DEFAULT_ENTITY_TYPES
+    # 核心逻辑
+    # output是拓扑前序依赖的输出，在这里作为输入
+    # 具体内容是切分完成的文本片段
     output = cast(pd.DataFrame, input.get_input())
     strategy = strategy or {}
+    # 获取需要被执行的函数
+    # 本教程中，会得到一个名为run_fi的函数
+    # run_fi的源码见 ./strategies/graph_intelligence/run_graph_intelligence.py
+    # 实体提取的核心源码也在那个文件之中
     strategy_exec = _load_strategy(
         strategy.get("type", ExtractEntityStrategyType.graph_intelligence)
     )

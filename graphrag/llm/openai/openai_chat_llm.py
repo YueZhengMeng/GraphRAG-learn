@@ -46,6 +46,9 @@ class OpenAIChatLLM(BaseLLM[CompletionInput, CompletionOutput]):
     async def _execute_llm(
         self, input: CompletionInput, **kwargs: Unpack[LLMInput]
     ) -> CompletionOutput | None:
+        # 核心逻辑
+        # 最核心的LLM调用方法
+        # 调试LLM的输入输出时在这里打断点
         args = get_completion_llm_args(
             kwargs.get("model_parameters"), self.configuration
         )

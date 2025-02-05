@@ -46,15 +46,17 @@ def load_llm(
 ) -> CompletionLLM:
     """Load the LLM for the entity extraction chain."""
     on_error = _create_error_handler(callbacks)
-
+    # 核心逻辑
+    # 确认LLM类型正确
     if llm_type in loaders:
         if chat_only and not loaders[llm_type]["chat"]:
             msg = f"LLM type {llm_type} does not support chat"
             raise ValueError(msg)
         if cache is not None:
             cache = cache.child(name)
-
+        # 根据llm_type获取对应的loader
         loader = loaders[llm_type]
+        # loader["load"]是一个函数，用于加载LLM
         return loader["load"](on_error, cache, llm_config or {})
 
     msg = f"Unknown LLM type {llm_type}"
@@ -125,6 +127,9 @@ def _load_openai_chat_llm(
     config: dict[str, Any],
     azure=False,
 ):
+    # 核心逻辑
+    # 创建一个OpenAI聊天模型，使用多个工具组件封装其__call__方法并返回
+    # 根据config获取llm配置，获取失败则采用默认配置
     return _create_openai_chat_llm(
         OpenAIConfiguration({
             # Set default values
@@ -249,9 +254,14 @@ def _create_openai_chat_llm(
     azure=False,
 ) -> CompletionLLM:
     """Create an openAI chat llm."""
+    # 核心逻辑
+    # 创建OpenAI客户端
     client = create_openai_client(configuration=configuration, azure=azure)
+    # 创建限流器
     limiter = _create_limiter(configuration)
+    # 创建并发信号量
     semaphore = _create_semaphore(configuration)
+    # 创建OpenAI聊天模型，其中的__call__方法被多个工具组件逐层封装
     return create_openai_chat_llm(
         client, configuration, cache, limiter, semaphore, on_error=on_error
     )

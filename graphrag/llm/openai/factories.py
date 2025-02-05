@@ -46,6 +46,8 @@ def create_openai_chat_llm(
     on_cache_miss: OnCacheActionFn | None = None,
 ) -> CompletionLLM:
     """Create an OpenAI chat LLM."""
+    # 核心逻辑
+    # 创建OpenAI聊天模型
     operation = "chat"
     result = OpenAIChatLLM(client, config)
     result.on_error(on_error)
@@ -53,6 +55,7 @@ def create_openai_chat_llm(
         result = _rate_limited(result, config, operation, limiter, semaphore, on_invoke)
     if cache is not None:
         result = _cached(result, config, operation, cache, on_cache_hit, on_cache_miss)
+    # LLM的__call__方法被多层封装，调用时逐层执行
     result = OpenAIHistoryTrackingLLM(result)
     result = OpenAITokenReplacingLLM(result)
     return JsonParsingLLM(result)
