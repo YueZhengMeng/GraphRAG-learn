@@ -60,12 +60,16 @@ class OpenAIChatLLM(BaseLLM[CompletionInput, CompletionOutput]):
 
         model = self.configuration.lookup('model', '')
         llm_type, *models = model.split('.')
+        # 如果是设定好的LLM类型
         if is_valid_llm_type(llm_type):
+            # 调用预设函数创建LLM
             chat_llm = use_chat_llm(llm_type, model='.'.join(models))
+            # 调用预设LLM的invoke方法
             content = (await chat_llm.ainvoke(messages)).content
+            # 打印并返回LLM的输出
             print("content:", content)
             return content
-
+        # 如果不是设定好的LLM类型，则直接调用OpenAI的chat.completions.create方法
         completion = await self.client.chat.completions.create(
             messages=messages, **args
         )

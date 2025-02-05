@@ -69,10 +69,16 @@ async def run_extract_entities(
 
     # note: We're not using UnipartiteGraphChain.from_params
     # because we want to pass "timeout" to the llm_kwargs
+    # 基于tiktoken的tokenizer的文本切分器
+    # 如果输入的docs未被切分过（prechunked==False），就会被调用
+    # 在本教程中不会被调用
     text_splitter = _create_text_splitter(
         prechunked, chunk_size, chunk_overlap, encoding_name
     )
 
+    # 核心逻辑
+    # 实例化实体提取器
+    # 实体提取的源码在其__call__方法中
     extractor = GraphExtractor(
         llm_invoker=llm,
         prompt=extraction_prompt,
@@ -82,12 +88,17 @@ async def run_extract_entities(
             reporter.error("Entity Extraction Error", e, s, d) if reporter else None
         ),
     )
+
+    # 获取输入文本列表
     text_list = [doc.text.strip() for doc in docs]
 
     # If it's not pre-chunked, then re-chunk the input
+    # 本教程中不会被调用
     if not prechunked:
         text_list = text_splitter.split_text("\n".join(text_list))
 
+    # 执行实体提取
+    # delimiter是prompt中定义的分割符
     results = await extractor(
         list(text_list),
         {
@@ -98,6 +109,7 @@ async def run_extract_entities(
         },
     )
 
+    # 获取实体提取结果，并为各个节点和边添加来源文本段的id
     graph = results.output
     # Map the "source_id" back to the "id" field
     for _, node in graph.nodes(data=True):  # type: ignore
@@ -112,13 +124,15 @@ async def run_extract_entities(
                 docs[int(id)].id for id in edge["source_id"].split(",")
             )
 
+    # 提取得到的所有实体
     entities = [
         ({"name": item[0], **(item[1] or {})})
         for item in graph.nodes(data=True)
         if item is not None
     ]
-
+    # 转换为graphml格式的图数据
     graph_data = "".join(nx.generate_graphml(graph))
+    # 返回实体提取结果
     return EntityExtractionResult(entities, graph_data)
 
 

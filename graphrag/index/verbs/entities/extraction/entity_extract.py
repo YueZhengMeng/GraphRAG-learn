@@ -140,6 +140,11 @@ async def entity_extract(
     # 具体内容是切分完成的文本片段
     output = cast(pd.DataFrame, input.get_input())
     strategy = strategy or {}
+
+    # 手动设置不进行重复提取
+    # 具体分析见README.MD
+    strategy["max_gleanings"] = 0
+
     # 获取需要被执行的函数
     # 本教程中，会得到一个名为run_fi的函数
     # run_fi的源码见 ./strategies/graph_intelligence/run_graph_intelligence.py
@@ -166,6 +171,7 @@ async def entity_extract(
         num_started += 1
         return [result.entities, result.graphml_graph]
 
+    # 通过datashaper提供的协程调度函数，并发地提取output df的每一行，即每个文本切片的实体
     results = await derive_from_rows(
         output,
         run_strategy,
@@ -174,6 +180,7 @@ async def entity_extract(
         num_threads=kwargs.get("num_threads", 4),
     )
 
+    # 汇总并对齐每个文本切片的实体提取结果与图谱
     to_result = []
     graph_to_result = []
     for result in results:
@@ -184,6 +191,9 @@ async def entity_extract(
             to_result.append(None)
             graph_to_result.append(None)
 
+    # to："entities"
+    # graph_to："entity_graph"
+    # 在output中添加两个列，分别对应实体提取结果和图谱
     output[to] = to_result
     if graph_to is not None:
         output[graph_to] = graph_to_result

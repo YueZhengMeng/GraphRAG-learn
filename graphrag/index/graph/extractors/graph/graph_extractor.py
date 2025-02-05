@@ -102,6 +102,7 @@ class GraphExtractor:
         source_doc_map: dict[int, str] = {}
 
         # Wire defaults into the prompt variables
+        # 装填prompt模版的默认参数——待提取的实体类型与分隔符
         prompt_variables = {
             **prompt_variables,
             self._tuple_delimiter_key: prompt_variables.get(self._tuple_delimiter_key)
@@ -120,6 +121,8 @@ class GraphExtractor:
         for doc_index, text in enumerate(texts):
             try:
                 # Invoke the entity extraction
+                # 核心逻辑
+                # 调用大模型执行实体提取
                 result = await self._process_document(text, prompt_variables)
                 source_doc_map[doc_index] = text
                 all_records[doc_index] = result
@@ -133,13 +136,13 @@ class GraphExtractor:
                         "text": text,
                     },
                 )
-
+        # 解析LLM输出的实体提取结果，转换为networkx格式的图对象
         output = await self._process_results(
             all_records,
             prompt_variables.get(self._tuple_delimiter_key, DEFAULT_TUPLE_DELIMITER),
             prompt_variables.get(self._record_delimiter_key, DEFAULT_RECORD_DELIMITER),
         )
-
+        # 返回networkx格式的图对象
         return GraphExtractionResult(
             output=output,
             source_docs=source_doc_map,
@@ -148,6 +151,8 @@ class GraphExtractor:
     async def _process_document(
         self, text: str, prompt_variables: dict[str, str]
     ) -> str:
+        # 核心逻辑
+        # 调用大模型执行实体提取
         response = await self._llm(
             self._extraction_prompt,
             variables={
@@ -158,7 +163,12 @@ class GraphExtractor:
         results = response.output or ""
 
         # Repeat to ensure we maximize entity count
+        # 重复多次提取，确保实体数量最大化
+        # 本教程中max_gleanings=0，即不进行重复提取
         for i in range(self._max_gleanings):
+            # 这里的response.history里只有提取的结果，没有最初发送给LLM的prompt与输入文本
+            # 实测发现LLM因此出现了幻觉
+            # 这样的设计是否有些不妥？或者是我配置的参数有误？
             glean_response = await self._llm(
                 CONTINUE_PROMPT,
                 name=f"extract-continuation-{i}",
@@ -167,9 +177,11 @@ class GraphExtractor:
             results += glean_response.output or ""
 
             # if this is the final glean, don't bother updating the continuation flag
+            # 达到最大提取次数，不再继续提取
             if i >= self._max_gleanings - 1:
                 break
 
+            # 让大模型判断是否继续提取
             continuation = await self._llm(
                 LOOP_PROMPT,
                 name=f"extract-loopcheck-{i}",
@@ -196,14 +208,17 @@ class GraphExtractor:
         Returns:
             - output - unipartite graph in graphML format
         """
+        # 核心逻辑
+        # 解析结果字符串，创建无向图
         graph = nx.Graph()
         for source_doc_id, extracted_data in results.items():
             records = [r.strip() for r in extracted_data.split(record_delimiter)]
 
             for record in records:
+                # 解析字符串
                 record = re.sub(r"^\(|\)$", "", record.strip())
                 record_attributes = record.split(tuple_delimiter)
-
+                # 实体类型，加点
                 if record_attributes[0] == '"entity"' and len(record_attributes) >= 4:
                     # add this record as a node in the G
                     entity_name = clean_str(record_attributes[1].upper())
@@ -238,7 +253,7 @@ class GraphExtractor:
                             description=entity_description,
                             source_id=str(source_doc_id),
                         )
-
+                # 关系类型，加边
                 if (
                     record_attributes[0] == '"relationship"'
                     and len(record_attributes) >= 5
@@ -291,7 +306,7 @@ class GraphExtractor:
                         description=edge_description,
                         source_id=edge_source_id,
                     )
-
+        # 返回无向图
         return graph
 
 

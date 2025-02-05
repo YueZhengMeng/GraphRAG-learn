@@ -91,6 +91,8 @@ def register_creators(llm_type: Union[str, LLMType],
                       llm_creator: Callable[..., BaseLanguageModel[Union[str, BaseMessage]]],
                       chat_llm_creator: Callable[..., BaseChatModel],
                       embeddings_creator: Callable[..., Embeddings]):
+    # 核心逻辑
+    # 将所有模型及其对应的创建函数注册到全局变量_llm_creators中
     register_llm_creator(llm_type, llm_creator)
     register_chat_llm_creator(llm_type, chat_llm_creator)
     register_embeddings_creator(llm_type, embeddings_creator)
@@ -98,6 +100,8 @@ def register_creators(llm_type: Union[str, LLMType],
 
 def use_llm(llm_type: Optional[Union[str, LLMType]] = None, **kwargs) -> \
         BaseLanguageModel[Union[str, BaseMessage]]:
+    # 核心逻辑
+    # 先执行注册函数，将所有模型及其对应的创建函数注册到全局变量_llm_creators中
     _register_all()
 
     llm_type = llm_type or _global_type
@@ -108,11 +112,13 @@ def use_llm(llm_type: Optional[Union[str, LLMType]] = None, **kwargs) -> \
     if llm_type not in _llm_creators:
         raise RuntimeError(f'The specified llm `{llm_type}` does not exist'
                            f'{"." if llm_type is None else ", it must be registered before using."}')
-
+    # 根据llm_type从全局变量_llm_creators中获取对应的创建函数，并调用该函数，返回一个LLM对象
     return _llm_creators[llm_type](**kwargs)
 
 
 def use_chat_llm(llm_type: Optional[Union[str, LLMType]] = None, **kwargs) -> BaseChatModel:
+    # 核心逻辑
+    # 先执行注册函数，将所有模型及其对应的创建函数注册到全局变量_llm_creators中
     _register_all()
 
     llm_type = llm_type or _global_type
@@ -123,7 +129,7 @@ def use_chat_llm(llm_type: Optional[Union[str, LLMType]] = None, **kwargs) -> Ba
     if llm_type not in _chat_llm_creators:
         raise RuntimeError(f'The specified chat llm `{llm_type}` does not exist'
                            f'{"." if llm_type is None else ", it must be registered before using."}')
-
+    # 根据llm_type从全局变量_llm_creators中获取对应的创建函数，并调用该函数，返回一个LLM对象
     return _chat_llm_creators[llm_type](**kwargs)
 
 
@@ -150,6 +156,8 @@ def use_llm_all(llm_type: Optional[Union[str, LLMType]] = None) -> \
 
 @once
 def _register_all():
+    # 核心逻辑
+    # 将我们定义的国产大模型及其对应的创建函数注册到全局变量_chat_llm_creators中
     creators = [
         (LLMType.QIANFAN, qianfan.creators),
         (LLMType.TONGYI, tongyi.creators)
