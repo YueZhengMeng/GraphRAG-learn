@@ -126,8 +126,9 @@ def index_cli(
         """
         1. 注册信号处理函数，用于处理SIGINT和SIGHUP信号
         2. 创建一个异步任务，用于执行run_pipeline_with_config函数
-        3. 如果当前系统是Linux，则使用uvloop库来优化异步IO操作
-        4. 创建一个事件循环，执行异步任务
+        3.1. 如果当前系统不是Windows，则使用asyncio库的event_loop来调度协程
+        3.2. 如果当前系统是Linux，则使用uvloop库来调度协程
+        4. 执行异步协程任务
         """
         import signal
 
@@ -315,7 +316,8 @@ def _read_config_parameters(root: str, config: str | None, reporter: ProgressRep
 
     if settings_yaml.exists():
         reporter.success(f"Reading settings from {settings_yaml}")
-        with settings_yaml.open("r") as file:
+        # 如果settings.yaml文件中有中文字符，则需要指定编码为utf-8
+        with settings_yaml.open("r", encoding="utf-8") as file:
             import yaml
 
             data = yaml.safe_load(file)
