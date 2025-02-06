@@ -31,6 +31,10 @@ class OpenAIHistoryTrackingLLM(LLM[CompletionInput, CompletionOutput]):
         """Call the LLM."""
         history = kwargs.get("history") or []
         output = await self._delegate(input, **kwargs)
+        # 核心逻辑
+        # 将LLM的输出以system role添加到history中，并返回
+        # 我对此有些疑惑，不应该是assistant role吗？
+        # 而且，input不需要以user role添加到history中吗？
         return LLMOutput(
             output=output.output,
             json=output.json,

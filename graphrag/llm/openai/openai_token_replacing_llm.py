@@ -33,5 +33,7 @@ class OpenAITokenReplacingLLM(LLM[CompletionInput, CompletionOutput]):
         """Call the LLM with the input and kwargs."""
         variables = kwargs.get("variables")
         history = kwargs.get("history") or []
+        # 核心逻辑
+        # 用参数变量替换prompt模板中的占位符
         input = perform_variable_replacements(input, history, variables)
         return await self._delegate(input, **kwargs)
