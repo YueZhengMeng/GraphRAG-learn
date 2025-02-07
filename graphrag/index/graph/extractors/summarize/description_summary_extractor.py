@@ -64,6 +64,10 @@ class SummarizeExtractor:
         descriptions: list[str],
     ) -> SummarizationResult:
         """Call method definition."""
+        # 核心逻辑
+        # 1. 如果没有描述，则直接返回空字符串
+        # 2. 如果只有一个描述，则直接返回该描述
+        # 3. 如果有多个描述，则使用LLM进行总结
         result = ""
         if len(descriptions) == 0:
             result = ""
@@ -122,6 +126,8 @@ class SummarizeExtractor:
         self, items: str | tuple[str, str] | list[str], descriptions: list[str]
     ):
         """Summarize descriptions using the LLM."""
+        # 核心逻辑
+        # 调用LLM进行总结
         response = await self._llm(
             self._summarization_prompt,
             name="summarize",

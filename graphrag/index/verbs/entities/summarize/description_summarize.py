@@ -110,9 +110,15 @@ async def summarize_descriptions(
             proxy: !ENV ${GRAPHRAG_OPENAI_PROXY} # The proxy to use for azure
     ```
     """
+    # 核心逻辑
+    # 同一实体可能在文本库中多次出现，每次被提取都可能生成不同的描述
+    # 同一实体的多个描述被汇总在一个列表中，在这里被总结为单个描述
     log.debug("summarize_descriptions strategy=%s", strategy)
+    # 读取实体提取结果
     output = cast(pd.DataFrame, input.get_input())
     strategy = strategy or {}
+    # 加载描述总结函数
+    # 源码见graphrag/index/graph/extractors/summarize/description_summary_extractor.py
     strategy_exec = load_strategy(
         strategy.get("type", SummarizeStrategyType.graph_intelligence)
     )
@@ -122,9 +128,11 @@ async def summarize_descriptions(
         graph: nx.Graph = load_graph(cast(str | nx.Graph, getattr(row, column)))
 
         ticker_length = len(graph.nodes) + len(graph.edges)
-
+        # ticker是进度条
         ticker = progress_ticker(callbacks.progress, ticker_length)
 
+        # futures表示协程的预期返回值
+        # 总结节点的描述
         futures = [
             do_summarize_descriptions(
                 node,
@@ -134,6 +142,7 @@ async def summarize_descriptions(
             )
             for node in graph.nodes()
         ]
+        # 总结边的描述
         futures += [
             do_summarize_descriptions(
                 edge,
@@ -144,8 +153,10 @@ async def summarize_descriptions(
             for edge in graph.edges()
         ]
 
+        # 实际执行协程
         results = await asyncio.gather(*futures)
 
+        # 用总结结果更新图
         for result in results:
             graph_item = result.items
             if isinstance(graph_item, str) and graph_item in graph.nodes():
@@ -153,6 +164,7 @@ async def summarize_descriptions(
             elif isinstance(graph_item, tuple) and graph_item in graph.edges():
                 graph.edges[graph_item]["description"] = result.description
 
+        # 返回结果
         return DescriptionSummarizeRow(
             graph="\n".join(nx.generate_graphml(graph)),
         )
@@ -163,6 +175,7 @@ async def summarize_descriptions(
         ticker: ProgressTicker,
         semaphore: asyncio.Semaphore,
     ):
+        # 执行描述总结，通过信号量限制并发数
         async with semaphore:
             results = await strategy_exec(
                 graph_item,
@@ -178,20 +191,25 @@ async def summarize_descriptions(
     # This iteration will only happen once, but avoids hardcoding a iloc[0]
     # Since parallelization is at graph level (nodes and edges), we can't use
     # the parallelization of the derive_from_rows
+    # 因为实体和边比较多，这里通过信号量限制并发数
     semaphore = asyncio.Semaphore(kwargs.get("num_threads", 4))
 
+    # 核心逻辑
+    # 调用LLM，执行描述总结
     results = [
         await get_resolved_entities(row, semaphore) for row in output.itertuples()
     ]
 
     to_result = []
 
+    # 遍历结果，将结果写入到输出表
     for result in results:
         if result:
             to_result.append(result.graph)
         else:
             to_result.append(None)
     output[to] = to_result
+    # 返回结果
     return TableContainer(table=output)
 
 
