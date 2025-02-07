@@ -171,6 +171,7 @@ async def run_pipeline_with_config(
         emit=emit,
         is_resume_run=is_resume_run,
     ):
+        # 返回完成的工作流的结果
         yield table
 
 
