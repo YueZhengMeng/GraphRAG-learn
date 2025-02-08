@@ -22,7 +22,8 @@ def run(graph: nx.Graph, args: dict[str, Any]) -> dict[int, dict[str, list[str]]
         log.info(
             "Running leiden with max_cluster_size=%s, lcc=%s", max_cluster_size, use_lcc
         )
-
+    # 核心逻辑
+    # 调用层次化莱顿算法
     node_id_to_community_map = _compute_leiden_communities(
         graph=graph,
         max_cluster_size=max_cluster_size,
@@ -35,6 +36,12 @@ def run(graph: nx.Graph, args: dict[str, Any]) -> dict[int, dict[str, list[str]]
     if levels is None:
         levels = sorted(node_id_to_community_map.keys())
 
+    # 返回分层与社区划分结果
+    # 格式：
+    # {"层次 0" : {"社区 0" : [本社区实体列表], "社区 1" : [本社区实体列表]}}
+    # {"层次 1" : {"社区 2" : [本社区实体列表], "社区 3" : [本社区实体列表]}}
+    # 高层次中的社区，是对上一层社区的进一步划分，例如：
+    # 社区2 和 社区3 中的实体都来自 社区1
     results_by_level: dict[int, dict[str, list[str]]] = {}
     for level in levels:
         result = {}
@@ -55,13 +62,15 @@ def _compute_leiden_communities(
     seed=0xDEADBEEF,
 ) -> dict[int, dict[str, int]]:
     """Return Leiden root communities."""
+    # 最大连通分量
     if use_lcc:
         graph = stable_largest_connected_component(graph)
-
+    # 调库，执行层次化莱顿算法
     community_mapping = hierarchical_leiden(
         graph, max_cluster_size=max_cluster_size, random_seed=seed
     )
     results: dict[int, dict[str, int]] = {}
+    # 取出分层与社区划分结果
     for partition in community_mapping:
         results[partition.level] = results.get(partition.level, {})
         results[partition.level][partition.node] = partition.cluster

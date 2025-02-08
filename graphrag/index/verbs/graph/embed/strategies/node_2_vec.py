@@ -14,10 +14,13 @@ from graphrag.index.verbs.graph.embed.typing import NodeEmbeddings
 
 def run(graph: nx.Graph, args: dict[str, Any]) -> NodeEmbeddings:
     """Run method definition."""
+    # 使用最大连通子图
     if args.get("use_lcc", True):
         graph = stable_largest_connected_component(graph)
 
     # create graph embedding using node2vec
+    # 核心逻辑
+    # 调库执行node2vec算法，对输入的图进行embedding
     embeddings = embed_nod2vec(
         graph=graph,
         dimensions=args.get("dimensions", 1536),
@@ -30,5 +33,5 @@ def run(graph: nx.Graph, args: dict[str, Any]) -> NodeEmbeddings:
 
     pairs = zip(embeddings.nodes, embeddings.embeddings.tolist(), strict=True)
     sorted_pairs = sorted(pairs, key=lambda x: x[0])
-
+    # 返回{"节点名" : "向量"}组成的字典
     return dict(sorted_pairs)

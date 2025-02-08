@@ -63,6 +63,9 @@ async def embed_graph(
         random_seed: 86 # Optional, The random seed to use for the embedding, default: 86
     ```
     """
+    # 核心逻辑
+    # output_df格式：['entity_graph', 'level', 'clustered_graph']
+    # 每一行是前一步骤分层得到的一个层次
     output_df = cast(pd.DataFrame, input.get_input())
 
     strategy_type = strategy.get("type", EmbedGraphStrategyType.node2vec)
@@ -71,6 +74,8 @@ async def embed_graph(
     async def run_strategy(row):  # noqa RUF029 async is required for interface
         return run_embeddings(strategy_type, cast(Any, row[column]), strategy_args)
 
+    # 核心逻辑
+    # 调用embed_graph方法，对输入的每一层图进行异步并发embedding
     results = await derive_from_rows(
         output_df,
         run_strategy,
@@ -91,7 +96,8 @@ def run_embeddings(
     match strategy:
         case EmbedGraphStrategyType.node2vec:
             from .strategies.node_2_vec import run as run_node_2_vec
-
+            # 核心逻辑
+            # 执行node2vec算法，对输入的图进行embedding
             return run_node_2_vec(graph, args)
         case _:
             msg = f"Unknown strategy {strategy}"

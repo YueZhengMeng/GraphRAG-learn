@@ -58,9 +58,17 @@ def cluster_graph(
     ```
     """
     output_df = cast(pd.DataFrame, input.get_input())
+    # 核心逻辑
+    # 调用分层莱顿算法，对输入图进行分层和社区划分
+    # results格式：pd.Series 仅一个元素
+    # results[0]格式：[(层次号,社区号,[包含的实体序列]), (层次号,社区号,[包含的实体序列]), ...]
+    # 高层次中的社区，是对上一层社区的进一步划分，例如：
+    # 层次0包含社区0和社区1，层次1包含社区2和社区3
+    # 层次1社区2 和 层次1社区3 中的实体都来自 层次0社区1
     results = output_df[column].apply(lambda graph: run_layout(strategy, graph))
 
     community_map_to = "communities"
+    # 保存社区划分结果到输出表
     output_df[community_map_to] = results
 
     level_to = level_to or f"{to}_level"
@@ -71,6 +79,8 @@ def cluster_graph(
 
     num_total = len(output_df)
 
+    # 核心逻辑
+    # 添加层次、社区，以及度等关键信息到图中
     # Go through each of the rows
     graph_level_pairs_column: list[list[tuple[int, str]]] = []
     for _, row in progress_iterable(
@@ -79,6 +89,7 @@ def cluster_graph(
         levels = row[level_to]
         graph_level_pairs: list[tuple[int, str]] = []
 
+        # 对于划分的每一层，都生成其对应的图，并将其添加到列表中
         # For each of the levels, get the graph and add it to the list
         for level in levels:
             graph = "\n".join(
@@ -163,12 +174,18 @@ def run_layout(
     match strategy_type:
         case GraphCommunityStrategyType.leiden:
             from .strategies.leiden import run as run_leiden
-
+            # 核心逻辑
+            # 调用分层莱顿算法，对输入图进行分层和社区划分
             clusters = run_leiden(graph, strategy)
         case _:
             msg = f"Unknown clustering strategy {strategy_type}"
             raise ValueError(msg)
 
+    # clusters格式：
+    # {"层次 0" : {"社区 0" : [本社区实体列表], "社区 1" : [本社区实体列表]}}
+    # {"层次 1" : {"社区 2" : [本社区实体列表], "社区 3" : [本社区实体列表]}}
+    # 高层次中的社区，是对上一层社区的进一步划分，例如：
+    # 社区2 和 社区3 中的实体都来自 社区1
     results: Communities = []
     for level in clusters:
         for cluster_id, nodes in clusters[level].items():

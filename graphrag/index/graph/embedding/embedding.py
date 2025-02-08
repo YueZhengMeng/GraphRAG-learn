@@ -29,6 +29,8 @@ def embed_nod2vec(
 ) -> NodeEmbeddings:
     """Generate node embeddings using Node2Vec."""
     # generate embedding
+    # 核心逻辑
+    # 调库执行node2vec算法，对输入的图进行embedding
     lcc_tensors = gc.embed.node2vec_embed(  # type: ignore
         graph=graph,
         dimensions=dimensions,
@@ -38,4 +40,5 @@ def embed_nod2vec(
         walk_length=walk_length,
         random_seed=random_seed,
     )
+    # lcc_tensors[0]是embedding向量组成的ndarray，lcc_tensors[1]是node_id组成的list
     return NodeEmbeddings(embeddings=lcc_tensors[0], nodes=lcc_tensors[1])
