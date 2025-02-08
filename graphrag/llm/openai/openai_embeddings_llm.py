@@ -30,7 +30,9 @@ class OpenAIEmbeddingsLLM(BaseLLM[EmbeddingInput, EmbeddingOutput]):
     async def _execute_llm(
         self, input: EmbeddingInput, **kwargs: Unpack[LLMInput]
     ) -> EmbeddingOutput | None:
-
+        # 核心逻辑
+        # 最核心的embedding模型调用方法
+        # 调试LLM的输入输出时在这里打断点
         model = self.configuration.lookup('model', '')
         llm_type, *models = model.split('.')
         if is_valid_llm_type(llm_type):

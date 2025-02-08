@@ -36,11 +36,14 @@ async def run(
     batch_size = args.get("batch_size", 16)
     batch_max_tokens = args.get("batch_max_tokens", 8191)
     oai_config = OpenAIConfiguration(llm_config)
+    # 核心逻辑
+    # 基于tiktoken的文本切分器
     splitter = _get_splitter(oai_config, batch_max_tokens)
     llm = _get_llm(oai_config, callbacks, cache)
     semaphore: asyncio.Semaphore = asyncio.Semaphore(args.get("num_threads", 4))
 
     # Break up the input texts. The sizes here indicate how many snippets are in each input text
+    # 调用文本切分器，将超过embedding模型最大输入长度的文本进行切分，并返回切分后的文本和每原始个文本的切分次数
     texts, input_sizes = _prepare_embed_texts(input, splitter)
     text_batches = _create_text_batches(
         texts,
@@ -56,10 +59,15 @@ async def run(
         batch_size,
         batch_max_tokens,
     )
+    # 进度条
     ticker = progress_ticker(callbacks.progress, len(text_batches))
 
     # Embed each chunk of snippets
+    # 执行embedding
     embeddings = await _execute(llm, text_batches, ticker, semaphore)
+    # 整理汇总文本的embedding
+    # 部分原始文本可能会因为超长，被切分为多个片段
+    # 在这里需要将这些片段的embedding进行平均，得到原始文本的embedding
     embeddings = _reconstitute_embeddings(embeddings, input_sizes)
 
     return TextEmbeddingResult(embeddings=embeddings)
@@ -101,7 +109,8 @@ async def _execute(
             result = np.array(chunk_embeddings.output)
             tick(1)
         return result
-
+    # 核心逻辑
+    # 基于协程和信号量并发执行embedding
     futures = [embed(chunk) for chunk in chunks]
     results = await asyncio.gather(*futures)
     # merge results in a single list of lists (reduce the collect dimension)
@@ -163,6 +172,10 @@ def _reconstitute_embeddings(
     raw_embeddings: list[list[float]], sizes: list[int]
 ) -> list[list[float] | None]:
     """Reconstitute the embeddings into the original input texts."""
+    # 核心逻辑
+    # 整理汇总文本的embedding
+    # 部分原始文本可能会因为超长，被切分为多个片段
+    # 在这里需要将这些片段的embedding进行平均，得到原始文本的embedding
     embeddings: list[list[float] | None] = []
     cursor = 0
     for size in sizes:

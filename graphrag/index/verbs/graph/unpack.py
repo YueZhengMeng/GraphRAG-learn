@@ -37,6 +37,8 @@ def unpack_graph(
         column: <column name> # The name of the column containing the graph, should be a graphml graph
     ```
     """
+    # 核心逻辑
+    # 将graphml格式的图中的节点或边数据解包为列表
     if copy is None:
         copy = default_copy
     input_df = input.get_input()

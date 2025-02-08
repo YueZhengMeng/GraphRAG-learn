@@ -29,6 +29,11 @@ def build_steps(
         is not None
     )
 
+    # 手动设置对name和description都进行embedding
+    # 具体原因见README.MD
+    skip_name_embedding = False
+    skip_description_embedding = False
+
     return [
         {
             "verb": "unpack_graph",

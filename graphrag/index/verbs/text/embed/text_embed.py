@@ -79,8 +79,10 @@ async def text_embed(
             <...>
     ```
     """
+    # 核心逻辑
+    # 对文本进行embedding
     vector_store_config = strategy.get("vector_store")
-
+    # 如果配置了向量数据库，则使用向量数据库
     if vector_store_config:
         embedding_name = kwargs.get("embedding_name", "default")
         collection_name = _get_collection_name(vector_store_config, embedding_name)
@@ -101,7 +103,7 @@ async def text_embed(
             vector_store_config.get("store_in_table", False),
             kwargs.get("to", f"{column}_embedding"),
         )
-
+    # 如果没有配置向量数据库，则在内存中保存和检索向量
     return await _text_embed_in_memory(
         input,
         callbacks,
@@ -120,6 +122,9 @@ async def _text_embed_in_memory(
     strategy: dict,
     to: str,
 ):
+    # 核心逻辑
+    # 执行文本embedding
+    # 源码见graphrag/index/verbs/text/embed/strategies/openai.py
     output_df = cast(pd.DataFrame, input.get_input())
     strategy_type = strategy["type"]
     strategy_exec = load_strategy(strategy_type)
@@ -127,6 +132,8 @@ async def _text_embed_in_memory(
     input_table = input.get_input()
 
     texts: list[str] = input_table[column].to_numpy().tolist()
+    # 核心逻辑
+    # 执行embedding
     result = await strategy_exec(texts, callbacks, cache, strategy_args)
 
     output_df[to] = result.embeddings
@@ -252,7 +259,8 @@ def load_strategy(strategy: TextEmbedStrategyType) -> TextEmbeddingStrategy:
     match strategy:
         case TextEmbedStrategyType.openai:
             from .strategies.openai import run as run_openai
-
+            # 核心逻辑
+            # 执行基于openai接口的embedding
             return run_openai
         case TextEmbedStrategyType.mock:
             from .strategies.mock import run as run_mock
