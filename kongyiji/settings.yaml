@@ -85,7 +85,9 @@ entity_extraction:
   ## async_mode: override the global async_mode settings for this task
   prompt: "prompts/entity_extraction_cn.txt"
   entity_types: [organization,person,geo,event]
-  max_gleanings: 1
+  ## 设置不重复提取，但是不生效，运行时读取后值仍为1
+  ## 原因见graphrag/config/create_graphrag_config.py 419行
+  max_gleanings: 0
 
 summarize_descriptions:
   ## llm: override the global llm settings for this task
@@ -115,7 +117,7 @@ cluster_graph:
   max_cluster_size: 10
 
 embed_graph:
-  enabled: false # if true, will generate node2vec embeddings for nodes
+  enabled: true # if true, will generate node2vec embeddings for nodes
   # num_walks: 10
   # walk_length: 40
   # window_size: 2
@@ -123,7 +125,7 @@ embed_graph:
   # random_seed: 597832
 
 umap:
-  enabled: false # if true, will generate UMAP embeddings for nodes
+  enabled: true # if true, will generate UMAP embeddings for nodes
 
 snapshots:
   graphml: false
