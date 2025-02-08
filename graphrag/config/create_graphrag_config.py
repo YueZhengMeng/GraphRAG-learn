@@ -416,6 +416,10 @@ def create_graphrag_config(
                 async_mode=hydrate_async_type(entity_extraction_config, async_mode),
                 entity_types=reader.list("entity_types")
                 or defs.ENTITY_EXTRACTION_ENTITY_TYPES,
+                # 疑似存在bug
+                # 如果settings.yaml中设置max_gleanings=0
+                # 这里 0 or 1 = 1
+                # 即gleaning次数至少是1次
                 max_gleanings=reader.int(Fragment.max_gleanings)
                 or defs.ENTITY_EXTRACTION_MAX_GLEANINGS,
                 prompt=reader.str("prompt", Fragment.prompt_file),

@@ -141,10 +141,6 @@ async def entity_extract(
     output = cast(pd.DataFrame, input.get_input())
     strategy = strategy or {}
 
-    # 手动设置不进行重复提取
-    # 具体分析见README.MD
-    strategy["max_gleanings"] = 0
-
     # 获取需要被执行的函数
     # 本教程中，会得到一个名为run_fi的函数
     # run_fi的源码见 ./strategies/graph_intelligence/run_graph_intelligence.py

@@ -23,6 +23,10 @@ def build_steps(
     graphml_snapshot_enabled = config.get("graphml_snapshot", False) or False
     raw_entity_snapshot_enabled = config.get("raw_entity_snapshot", False) or False
 
+    # 手动设置不进行重复提取
+    # 具体分析见README.MD
+    entity_extraction_config["strategy"]["max_gleanings"] = 0
+
     return [
         {
             "verb": "entity_extract",
