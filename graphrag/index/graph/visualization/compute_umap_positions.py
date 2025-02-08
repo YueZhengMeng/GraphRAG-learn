@@ -61,6 +61,8 @@ def compute_umap_positions(
     random_state: int = 86,
 ) -> list[NodePosition]:
     """Project embedding vectors down to 2D/3D using UMAP."""
+    # 核心逻辑
+    # 调库执行UMAP降维算法
     embedding_positions = umap.UMAP(
         min_dist=min_dist,
         n_neighbors=n_neighbors,
@@ -71,11 +73,12 @@ def compute_umap_positions(
     ).fit_transform(embedding_vectors)
 
     embedding_position_data: list[NodePosition] = []
+    # 封装降维结果到每个节点的信息中
     for index, node_name in enumerate(node_labels):
         node_points = embedding_positions[index]  # type: ignore
         node_category = 1 if node_categories is None else node_categories[index]
         node_size = 1 if node_sizes is None else node_sizes[index]
-
+        # 降维到2维平面
         if len(node_points) == 2:
             embedding_position_data.append(
                 NodePosition(
@@ -86,6 +89,7 @@ def compute_umap_positions(
                     size=int(node_size),
                 )
             )
+        # 降维到3维空间
         else:
             embedding_position_data.append(
                 NodePosition(

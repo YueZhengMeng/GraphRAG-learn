@@ -38,20 +38,23 @@ def run(
     embeddings = _filter_raw_embeddings(embeddings)
     nodes = list(embeddings.keys())
     embedding_vectors = [embeddings[node_id] for node_id in nodes]
-
+    # 取出各节点的社区与度信息
     for node_id in nodes:
         node = graph.nodes[node_id]
         cluster = node.get("cluster", node.get("community", -1))
         node_clusters.append(cluster)
         size = node.get("degree", node.get("size", 0))
         node_sizes.append(size)
-
+    # 作为额外参数传入执行UMAP降维算法的函数中
+    # 但是这些信息不参与UMAP的计算，只是封装在结果中返回
     additional_args = {}
     if len(node_clusters) > 0:
         additional_args["node_categories"] = node_clusters
     if len(node_sizes) > 0:
         additional_args["node_sizes"] = node_sizes
 
+    # 核心逻辑
+    # 尝试执行UMAP算法
     try:
         return compute_umap_positions(
             embedding_vectors=np.array(embedding_vectors),
@@ -65,6 +68,7 @@ def run(
         on_error(e, traceback.format_exc(), None)
         # Umap may fail due to input sparseness or memory pressure.
         # For now, in these cases, we'll just return a layout with all nodes at (0, 0)
+        # 如果UMAP算法失败，则返回一个所有节点的坐标都为(0,0)的布局
         result = []
         for i in range(len(nodes)):
             cluster = node_clusters[i] if len(node_clusters) > 0 else 1

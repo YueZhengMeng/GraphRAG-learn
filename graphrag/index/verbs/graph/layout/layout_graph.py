@@ -68,7 +68,10 @@ def layout_graph(
     num_items = len(output_df)
     strategy_type = strategy.get("type", LayoutGraphStrategyType.umap)
     strategy_args = {**strategy}
-
+    # 核心逻辑
+    # 基于node2vec算法的embedding结果
+    # 通过UMAP降维算法，将embedding结果降维到2维
+    # 生成每个节点的坐标，用于可视化绘制
     has_embeddings = embeddings_column in output_df.columns
 
     layouts = output_df.apply(
@@ -86,6 +89,7 @@ def layout_graph(
         axis=1,
     )
     output_df[to] = layouts.apply(lambda layout: [pos.to_pandas() for pos in layout])
+    # 将布局信息添加到graphml格式的图中
     if graph_to is not None:
         output_df[graph_to] = output_df.apply(
             lambda row: _apply_layout_to_graph(
@@ -107,7 +111,8 @@ def _run_layout(
     match strategy:
         case LayoutGraphStrategyType.umap:
             from .methods.umap import run as run_umap
-
+            # 核心逻辑
+            # 执行UMAP降维算法
             return run_umap(
                 graph,
                 embeddings,
@@ -116,7 +121,9 @@ def _run_layout(
             )
         case LayoutGraphStrategyType.zero:
             from .methods.zero import run as run_zero
-
+            # 核心逻辑
+            # 如果不使用umap算法，或者umap算法执行失败
+            # 则返回一个所有节点的坐标都为(0,0)的布局
             return run_zero(
                 graph,
                 args,
