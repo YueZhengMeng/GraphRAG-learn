@@ -23,6 +23,10 @@ def build_steps(
     )
     skip_description_embedding = config.get("skip_description_embedding", False)
 
+    # 手动设置对description进行embedding
+    # 具体原因见README.MD
+    skip_description_embedding = False
+
     return [
         {
             "verb": "unpack_graph",

@@ -20,6 +20,7 @@
 4. 我认为，在`create_final_entities`这个工作流中对实体节点信息进行embedding时，应该对实体名字段`name`和描述字段`description`都进行embedding，便于之后检索阶段的进行基于语义近似的模糊匹配。  
    但是默认配置只对实体描述字段`description`进行embedding，跳过了对实体名字段`name`的embedding。而且我找了很久也没找到该配置应该在哪里修改。    
    所以我在`graphrag/index/workflows/v1/create_final_entities.py`中修改配置，手动设置`skip_name_embedding`和`skip_description_embedding`都为`False`。  
+5. 在`create_final_relationships`工作流中，也通过手动修改`graphrag/index/workflows/v1/create_final_relationships.py`中的配置，启动了对边的描述字段`description`的embedding。  
 
 ## 注意
 1. 在windows平台上安装时，去掉`requirements.txt`中的`uvloop==0.19.0`  

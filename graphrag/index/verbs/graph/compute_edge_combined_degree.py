@@ -48,6 +48,10 @@ def compute_edge_combined_degree(
         result[degree_column] = result[degree_column].fillna(0)
         return result
 
+    # 核心逻辑
+    # 获取各边的两侧节点的度
+    # 求和后作为边的度
+    # 放在rank列中返回
     edge_df = join_to_degree(edge_df, edge_source_column)
     edge_df = join_to_degree(edge_df, edge_target_column)
     edge_df[to] = (
