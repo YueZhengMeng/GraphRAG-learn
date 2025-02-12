@@ -35,6 +35,8 @@ def prepare_community_reports_edges(
     edge_df: pd.DataFrame = cast(pd.DataFrame, input.get_input()).fillna(
         value={description_column: _MISSING_DESCRIPTION}
     )
+    # 核心逻辑
+    # 整理边数据，保存到新列中返回
     edge_df[to] = edge_df.apply(
         lambda x: {
             id_column: x[id_column],

@@ -90,17 +90,21 @@ def _prepare_reports_at_level(
             how="left",
         )
 
+    # 核心逻辑
+    # 过滤，只保留本层的节点
     level_node_df = filter_nodes_to_level(node_df, level)
     log.info("Number of nodes at level=%s => %s", level, len(level_node_df))
     nodes = level_node_df[node_name_column].tolist()
 
     # Filter edges & claims to those containing the target nodes
+    # 过滤，只保留与本层节点相关的边和断言
     level_edge_df = filter_edges_to_nodes(edge_df, nodes)
     level_claim_df = (
         filter_claims_to_nodes(claim_df, nodes) if claim_df is not None else None
     )
 
     # concat all edge details per node
+    # 汇总每个节点与所有相连接的边的信息
     merged_node_df = pd.concat(
         [
             get_edge_details(level_node_df, level_edge_df, edge_source_column),
@@ -108,6 +112,7 @@ def _prepare_reports_at_level(
         ],
         axis=0,
     )
+    # 进行分组与聚合，整合每个节点自身的信息与所有相连接的边的信息到表中一行
     merged_node_df = (
         merged_node_df.groupby([
             node_name_column,
@@ -120,6 +125,7 @@ def _prepare_reports_at_level(
     )
 
     # concat claim details per node
+    # 如果有声明信息，则进行同样的分组与聚合
     if level_claim_df is not None:
         merged_node_df = merged_node_df.merge(
             cast(
@@ -145,6 +151,7 @@ def _prepare_reports_at_level(
     )
 
     # concat all node details, including name, degree, node_details, edge_details, and claim_details
+    # 将节点所有信息汇总到一列
     merged_node_df[schemas.ALL_CONTEXT] = merged_node_df.apply(
         lambda x: {
             node_name_column: x[node_name_column],
@@ -159,11 +166,13 @@ def _prepare_reports_at_level(
     )
 
     # group all node details by community
+    # 汇总同一社区内所有节点的信息
     community_df = (
         merged_node_df.groupby(node_community_column)
         .agg({schemas.ALL_CONTEXT: list})
         .reset_index()
     )
+    # 之后将这些信息整理成字符串
     community_df[schemas.CONTEXT_STRING] = community_df[schemas.ALL_CONTEXT].apply(
         lambda x: sort_context(
             x,
@@ -180,8 +189,9 @@ def _prepare_reports_at_level(
             community_id_column=community_id_column,
         )
     )
+    # 计算上下文字符串的长度，以及是否超出最大长度
     set_context_size(community_df)
     set_context_exceeds_flag(community_df, max_tokens)
-
+    # 加入层次信息
     community_df[schemas.COMMUNITY_LEVEL] = level
     return community_df

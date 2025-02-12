@@ -60,13 +60,17 @@ async def create_community_reports(
     nodes = cast(pd.DataFrame, nodes_ctr.table)
     community_hierarchy_ctr = get_required_input_table(input, "community_hierarchy")
     community_hierarchy = cast(pd.DataFrame, community_hierarchy_ctr.table)
-
+    # 核心逻辑
+    # 获取社区层级，数字从大到小，即从高层次细粒度小社区到低层次大社区依次生成
     levels = get_levels(nodes)
     reports: list[CommunityReport | None] = []
     tick = progress_ticker(callbacks.progress, len(local_contexts))
     runner = load_strategy(strategy["type"])
-
+    # 核心逻辑
+    # 逐层生成社区报告
     for level in levels:
+        # 汇总各社区内所有节点与边信息，并整理为上下文字符串
+        # 具体逻辑见prep_community_report_context函数源码
         level_contexts = prep_community_report_context(
             pd.DataFrame(reports),
             local_context_df=local_contexts,
@@ -89,7 +93,8 @@ async def create_community_reports(
             )
             tick()
             return result
-
+        # 协程并发各社区的报告生成任务
+        # 核心函数源码见graphrag/index/graph/extractors/community_reports/community_reports_extractor.py
         local_reports = await derive_from_rows(
             level_contexts,
             run_generate,

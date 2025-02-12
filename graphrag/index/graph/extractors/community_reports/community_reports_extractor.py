@@ -53,6 +53,8 @@ class CommunityReportsExtractor:
     async def __call__(self, inputs: dict[str, Any]):
         """Call method definition."""
         output = None
+        # 核心逻辑
+        # 调用LLM生成社区报告
         try:
             response = (
                 await self._llm(

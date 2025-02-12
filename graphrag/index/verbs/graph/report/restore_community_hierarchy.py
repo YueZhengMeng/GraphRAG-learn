@@ -23,6 +23,9 @@ def restore_community_hierarchy(
     **_kwargs,
 ) -> TableContainer:
     """Restore the community hierarchy from the node data."""
+
+    # 核心逻辑
+    # 提取图的分层与社区划分结果
     node_df: pd.DataFrame = cast(pd.DataFrame, input.get_input())
     community_df = (
         node_df.groupby([community_column, level_column])
@@ -44,6 +47,9 @@ def restore_community_hierarchy(
 
     community_hierarchy = []
 
+    # 核心逻辑
+    # 计算每个社区的子社区层次化结构
+    # 包括：当前社区id，当前社区层次，当前社区子社区id，当前社区子社区大小
     for idx in range(len(levels) - 1):
         level = levels[idx]
         log.debug("Level: %s", level)

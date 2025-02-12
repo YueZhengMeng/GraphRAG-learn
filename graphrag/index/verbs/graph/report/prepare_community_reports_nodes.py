@@ -34,6 +34,8 @@ def prepare_community_reports_nodes(
     node_df = node_df.fillna(value={description_column: _MISSING_DESCRIPTION})
 
     # merge values of four columns into a map column
+    # 核心逻辑
+    # 整理节点数据，保存到新列中返回
     node_df[to] = node_df.apply(
         lambda x: {
             id_column: x[id_column],
