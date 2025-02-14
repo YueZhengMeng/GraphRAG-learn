@@ -67,15 +67,21 @@ def read_indexer_reports(
     """Read in the Community Reports from the raw indexing outputs."""
     report_df = final_community_reports
     entity_df = final_nodes
+    # 过滤，只保留层次小于等于community_level的层
     entity_df = _filter_under_community_level(entity_df, community_level)
     entity_df["community"] = entity_df["community"].fillna(-1)
     entity_df["community"] = entity_df["community"].astype(int)
 
+    # 核心逻辑
+    # 同一实体可能在多层的多个社区出现，只保留高层的实体与社区
     entity_df = entity_df.groupby(["title"]).agg({"community": "max"}).reset_index()
     entity_df["community"] = entity_df["community"].astype(str)
+    # 如果一个社区在更高层中被拆分为多个子社区，则只保留子社区
     filtered_community_df = entity_df["community"].drop_duplicates()
 
+    # 过滤，只保留层次小于等于community_level的层
     report_df = _filter_under_community_level(report_df, community_level)
+    # 过滤，只保留前面筛选得到的子社区
     report_df = report_df.merge(filtered_community_df, on="community", how="inner")
 
     return read_community_reports(

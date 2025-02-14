@@ -108,11 +108,16 @@ def get_local_search_engine(
     description_embedding_store: BaseVectorStore,
 ) -> LocalSearch:
     """Create a local search engine based on data + configuration."""
+
+    # LLM接口
     llm = get_llm(config)
     # chatOpenAI()
+
+    # embedding模型接口
     text_embedder = get_text_embedder(config)
     # OpenAIEmbedding()
 
+    # tokenizer
     token_encoder = tiktoken.get_encoding(config.encoding_model)
 
     ls_config = config.local_search

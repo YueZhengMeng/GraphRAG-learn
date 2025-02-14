@@ -99,9 +99,12 @@ def run_local_search(
     query: str,
 ):
     """Run a local search with the given query."""
+    # 核心逻辑
+    # 读取关键路径与配置文件
     data_dir, root_dir, config = _configure_paths_and_settings(data_dir, root_dir)
     data_path = Path(data_dir)
 
+    # 读取索引构建阶段的数据
     final_nodes = pd.read_parquet(data_path / "create_final_nodes.parquet")
     final_community_reports = pd.read_parquet(
         data_path / "create_final_community_reports.parquet"
@@ -110,7 +113,7 @@ def run_local_search(
     final_relationships = pd.read_parquet(
         data_path / "create_final_relationships.parquet"
     )
-    final_nodes = pd.read_parquet(data_path / "create_final_nodes.parquet")
+    final_nodes = pd.read_parquet(data_path / "create_final_nodes.parquet") # 重复？
     final_entities = pd.read_parquet(data_path / "create_final_entities.parquet")
     final_covariates_path = data_path / "create_final_covariates.parquet"
     final_covariates = (
@@ -119,16 +122,19 @@ def run_local_search(
         else None
     )
 
+    # 创建一个LanceDB向量数据库
     vector_store_args = (
         config.embeddings.vector_store if config.embeddings.vector_store else {}
     )
     vector_store_type = vector_store_args.get("type", VectorStoreType.LanceDB)
-
+    # 用于存储和检索实体描述
     description_embedding_store = __get_embedding_description_store(
         vector_store_type=vector_store_type,
         config_args=vector_store_args,
     )
+    # 读取实体数据到一个列表，其中包括实体描述的embedding
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
+    # 将实体描述和对应的embedding存储到向量数据库中
     store_entity_semantic_embeddings(
         entities=entities, vectorstore=description_embedding_store
     )
@@ -138,6 +144,12 @@ def run_local_search(
         else []
     )
 
+    # 核心逻辑
+    # 创建一个LocalSearch对象，用于执行本地搜索
+    # reports是社区报告，只包括层次小于等于community_level的、最细粒度的社区
+    # text_units是文本切片，包括文本embedding
+    # entities是实体，包括描述embedding
+    # relationships是关系，不包括任何embedding
     search_engine = get_local_search_engine(
         config,
         reports=read_indexer_reports(
@@ -151,8 +163,11 @@ def run_local_search(
         response_type=response_type,
     )
 
+    # 核心逻辑
+    # 执行本地搜索，并获取搜索结果
     result = search_engine.search(query=query)
     reporter.success(f"Local Search Response: {result.response}")
+    # 返回搜索结果
     return result.response
 
 
@@ -194,7 +209,8 @@ def _read_config_parameters(root: str):
 
     if settings_yaml.exists():
         reporter.info(f"Reading settings from {settings_yaml}")
-        with settings_yaml.open("r") as file:
+        # 如果settings.yaml文件中有中文字符，则需要指定编码为utf-8
+        with settings_yaml.open("r", encoding="utf-8") as file:
             import yaml
 
             data = yaml.safe_load(file)

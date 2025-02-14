@@ -125,6 +125,9 @@ class LocalSearch(BaseSearch):
         """
         start_time = time.time()
         search_prompt = ""
+        # 核心逻辑
+        # 查询query相关的实体信息、关系信息、文本片段
+        # 并且拼接为context_text
         context_text, context_records = self.context_builder.build_context(
             query=query,
             conversation_history=conversation_history,
@@ -133,13 +136,16 @@ class LocalSearch(BaseSearch):
         )
         log.info("GENERATE ANSWER: %d. QUERY: %s", start_time, query)
         try:
+            # 使用context_text填充prompt模版
             search_prompt = self.system_prompt.format(
                 context_data=context_text, response_type=self.response_type
             )
+            # 装载message
             search_messages = [
                 {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
+            # 调用大模型
             # llm_execute()
             response = self.llm.generate(
                 messages=search_messages,
@@ -147,7 +153,7 @@ class LocalSearch(BaseSearch):
                 callbacks=self.callbacks,
                 **self.llm_params,
             )
-
+            # 返回结果
             return SearchResult(
                 response=response,
                 context_data=context_records,

@@ -133,16 +133,23 @@ class ChatOpenAI(BaseLLM, OpenAILLMImpl):
         model = self.model
         if not model:
             raise ValueError(_MODEL_REQUIRED_MSG)
-
+        # 核心逻辑
+        # query时在这里调用LLM
+        # 调试时在这里打断点
         llm_type, *models = model.split('.')
+        # 如果是设定好的LLM类型
         if is_valid_llm_type(llm_type):
             llm_type, *models = model.split('.')
+            # 调用预设LLM的invoke方法
             chat_llm = use_chat_llm(llm_type, model='.'.join(models))
+            # 如果是流式输出
             if streaming:
                 return ''.join([chunk.content for chunk in
                                 chat_llm.stream(messages, **kwargs)])
+            # 非流式输出
             return chat_llm.invoke(messages, **kwargs).content or ''
 
+        # 如果不是设定好的LLM类型，则直接调用OpenAI的chat.completions.create方法
         response = self.sync_client.chat.completions.create(  # type: ignore
             model=model,
             messages=messages,  # type: ignore
