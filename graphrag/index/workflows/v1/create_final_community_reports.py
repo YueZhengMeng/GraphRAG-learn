@@ -33,6 +33,12 @@ def build_steps(
     skip_summary_embedding = config.get("skip_summary_embedding", False)
     skip_full_content_embedding = config.get("skip_full_content_embedding", False)
 
+    # 手动设置对title、summary、full_content进行embedding
+    # 具体原因见README.MD
+    skip_title_embedding = False
+    skip_summary_embedding = False
+    skip_full_content_embedding = False
+
     return [
         #
         # Subworkflow: Prepare Nodes

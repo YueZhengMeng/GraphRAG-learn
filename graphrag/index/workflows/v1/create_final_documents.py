@@ -23,6 +23,11 @@ def build_steps(
         "document_raw_content_embed", base_text_embed
     )
     skip_raw_content_embedding = config.get("skip_raw_content_embedding", False)
+
+    # 手动设置对raw_content进行embedding
+    # 具体原因见README.MD
+    skip_raw_content_embedding = False
+
     return [
         {
             "verb": "rename",

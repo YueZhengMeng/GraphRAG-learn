@@ -28,6 +28,10 @@ def build_steps(
         is not None
     )
 
+    # 手动设置对text_unit进行embedding
+    # 具体原因见README.MD
+    skip_text_unit_embedding = False
+
     return [
         {
             "verb": "select",
