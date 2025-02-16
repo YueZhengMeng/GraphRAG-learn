@@ -35,3 +35,14 @@
 1. 在windows平台上安装时，去掉`requirements.txt`中的`uvloop==0.19.0`  
 这个包用于在linux环境下调度协程，不能在windows上安装。  
 该包在windows环境下不会被调用，对项目运行无影响。
+
+## 个人感想与建议
+微软的程序员们，在这个项目中，展示了其登峰造极的软件工程学水平。  
+但显然，他们没有尝试站在初学者的角度，考虑学习阶梯与成本的问题。  
+此外，该项目的早期实验性质也很明显，配置文件、代码注释和文档，都存在巨大的完善空间。  
+以上并非是我一个人的观点，另一个GraphRAG的精简实现项目[nano-graphrag](https://github.com/gusye1234/nano-graphrag)的作者也给出了近似的评价。  
+
+GraphRAG的核心算法，其实并不复杂，用两页PPT展示其中大约5个关键步骤就能够讲明白。  
+因此，我个人建议大家直接阅读[nano-graphrag](https://github.com/gusye1234/nano-graphrag)项目。   
+一方面是因为[nano-graphrag](https://github.com/gusye1234/nano-graphrag)只用几百行简单直白的代码就实现了GraphRAG的核心算法，另一方面是因为更适合应用于实际生产场景的[LightRAG](https://github.com/HKUDS/LightRAG)框架也是基于[nano-graphrag](https://github.com/gusye1234/nano-graphrag)二次开发的。  
+我之后也会阅读和解析以上两个项目，并分析自己的学习笔记。
