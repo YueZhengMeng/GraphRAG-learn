@@ -54,6 +54,8 @@ class GlobalCommunityContext(GlobalContextBuilder):
         """Prepare batches of community report data table as context data for global search."""
         conversation_history_context = ""
         final_context_data = {}
+
+        # 本教程中不会触发
         if conversation_history:
             # build conversation history context
             (
@@ -69,6 +71,8 @@ class GlobalCommunityContext(GlobalContextBuilder):
             if conversation_history_context != "":
                 final_context_data = conversation_history_context_data
 
+        # 核心逻辑
+        # 构建community_context
         community_context, community_context_data = build_community_context(
             community_reports=self.community_reports,
             entities=self.entities,

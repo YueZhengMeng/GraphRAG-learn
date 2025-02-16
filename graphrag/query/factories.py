@@ -167,10 +167,12 @@ def get_global_search_engine(
     response_type: str,
 ):
     """Create a global search engine based on data + configuration."""
+    # tokenizer
     token_encoder = tiktoken.get_encoding(config.encoding_model)
     gs_config = config.global_search
 
     return GlobalSearch(
+        # LLM接口
         llm=get_llm(config),
         context_builder=GlobalCommunityContext(
             community_reports=reports, entities=entities, token_encoder=token_encoder

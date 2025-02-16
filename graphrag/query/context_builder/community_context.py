@@ -44,7 +44,8 @@ def build_community_context(
     # 核心逻辑
     # 基于相关社区的报告，生成上下文
 
-    # 本教程中entities参数为空，因此community_weight_name参数也不会被计算。
+    # local search时entities参数为空，因此community_weight_name参数也不会被计算。
+    # global search时触发，community_weight值是社区内实体关联的文本片段的数量。
     if (
         entities
         and len(community_reports) > 0
@@ -128,6 +129,7 @@ def build_community_context(
         if current_tokens + new_tokens > max_tokens:
             # convert the current context records to pandas dataframe and sort by weight and rank if exist
             # 如果有社区报告上下文，则转换为pandas df并排序
+            # 排序：1. weight 2. rank
             # >1 是因为current_context_records[0]是表头
             if len(current_context_records) > 1:
                 record_df = _convert_report_context_to_df(
@@ -168,6 +170,8 @@ def build_community_context(
             current_context_records.append(new_context)
 
     # add the last batch if it has not been added
+    # 用于处理所有社区报告都加入后仍未达到max_tokens的情况
+    # 逻辑与注释同130行
     if current_context_text not in all_context_text:
         if len(current_context_records) > 1:
             record_df = _convert_report_context_to_df(
@@ -196,19 +200,29 @@ def _compute_community_weights(
     normalize: bool = True,
 ) -> list[CommunityReport]:
     """Calculate a community's weight as count of text units associated with entities within the community."""
+    # 核心逻辑
+    # 计算社区权重
+
     community_text_units = {}
+
+    # 统计每个社区中的实体关联的文本片段id
     for entity in entities:
         if entity.community_ids:
             for community_id in entity.community_ids:
                 if community_id not in community_text_units:
                     community_text_units[community_id] = []
                 community_text_units[community_id].extend(entity.text_unit_ids)
+
+    # 转换为set去重，得到每个社区关联的文本片段数量
+    # 并加入到社区报告的属性中
     for report in community_reports:
         if not report.attributes:
             report.attributes = {}
         report.attributes[weight_attribute] = len(
             set(community_text_units.get(report.community_id, []))
         )
+
+    # 归一化，除以最大值
     if normalize:
         # normalize by max weight
         all_weights = [

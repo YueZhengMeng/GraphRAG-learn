@@ -61,9 +61,12 @@ def run_global_search(
     query: str,
 ):
     """Run a global search with the given query."""
+    # 核心逻辑
+    # 读取关键路径与配置文件
     data_dir, root_dir, config = _configure_paths_and_settings(data_dir, root_dir)
     data_path = Path(data_dir)
 
+    # 读取索引构建阶段的数据
     final_nodes: pd.DataFrame = pd.read_parquet(
         data_path / "create_final_nodes.parquet"
     )
@@ -74,10 +77,14 @@ def run_global_search(
         data_path / "create_final_community_reports.parquet"
     )
 
+    # reports是社区报告，只包括层次小于等于community_level的、最细粒度的社区
     reports = read_indexer_reports(
         final_community_reports, final_nodes, community_level
     )
+    # entities是实体，包括描述embedding
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
+
+    # 创建一个GlobalSearch对象，用于执行全局搜索
     search_engine = get_global_search_engine(
         config,
         reports=reports,
@@ -85,9 +92,12 @@ def run_global_search(
         response_type=response_type,
     )
 
+    # 执行全局搜索，并获取搜索结果
     result = search_engine.search(query=query)
 
+    # 打印搜索结果
     reporter.success(f"Global Search Response: {result.response}")
+    # 返回搜索结果
     return result.response
 
 

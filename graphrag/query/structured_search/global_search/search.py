@@ -116,6 +116,12 @@ class GlobalSearch(BaseSearch):
         """
         # Step 1: Generate answers for each batch of community short summaries
         start_time = time.time()
+
+        # 核心逻辑
+        # 构建社区报告
+        # 首先根据每个社区内包含的实体所关联的文本切片数量，计算社区权重。关联文本越多，权重越高。
+        # 然后，根据社区权重和总结社区报告时生成的rank，对社区报告进行降序排序。
+        # 最后，逐个将社区报告加入上下文中，直到上下文长度达到max_tokens。
         context_chunks, context_records = self.context_builder.build_context(
             conversation_history=conversation_history, **self.context_builder_params
         )
@@ -123,12 +129,16 @@ class GlobalSearch(BaseSearch):
         if self.callbacks:
             for callback in self.callbacks:
                 callback.on_map_response_start(context_chunks)  # type: ignore
+
+        # 基于协程并发执行对每个社区报告上下文片段的总结
+        # 通过大模型，在社区报告中提取和总结与用户query相关的信息
         map_responses = await asyncio.gather(*[
             self._map_response_single_batch(
                 context_data=data, query=query, **self.map_llm_params
             )
             for data in context_chunks
         ])
+
         if self.callbacks:
             for callback in self.callbacks:
                 callback.on_map_response_end(map_responses)
@@ -136,12 +146,15 @@ class GlobalSearch(BaseSearch):
         map_prompt_tokens = sum(response.prompt_tokens for response in map_responses)
 
         # Step 2: Combine the intermediate answers from step 2 to generate the final answer
+        # 对之前生成的临时回答，基于相关性分数进行筛选和排序
+        # 再汇总拼接为context，发送给LLM生成最终回答
         reduce_response = await self._reduce_response(
             map_responses=map_responses,
             query=query,
             **self.reduce_llm_params,
         )
 
+        # 返回结果
         return GlobalSearchResult(
             response=reduce_response.response,
             context_data=context_records,
@@ -173,12 +186,15 @@ class GlobalSearch(BaseSearch):
         start_time = time.time()
         search_prompt = ""
         try:
+            # 使用社区报告上下文构建system prompt
             search_prompt = self.map_system_prompt.format(context_data=context_data)
+            # 组装发送给LLM的message
             search_messages = [
                 {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
             async with self.semaphore:
+                # 调用LLM
                 search_response = await self.llm.agenerate(
                     messages=search_messages, streaming=False, **llm_kwargs
                 )
@@ -250,6 +266,7 @@ class GlobalSearch(BaseSearch):
         start_time = time.time()
         try:
             # collect all key points into a single list to prepare for sorting
+            # 提取和汇总之前的回答
             key_points = []
             for index, response in enumerate(map_responses):
                 if not isinstance(response.response, list):
@@ -266,6 +283,7 @@ class GlobalSearch(BaseSearch):
                     })
 
             # filter response with score = 0 and rank responses by descending order of score
+            # 过滤掉相关性为0分的回答
             filtered_key_points = [
                 point
                 for point in key_points
@@ -283,6 +301,7 @@ class GlobalSearch(BaseSearch):
                     prompt_tokens=0,
                 )
 
+            # 基于相关性分数排序
             filtered_key_points = sorted(
                 filtered_key_points,
                 key=lambda x: x["score"],  # type: ignore
@@ -291,6 +310,7 @@ class GlobalSearch(BaseSearch):
 
             data = []
             total_tokens = 0
+            # 拼接回答
             for point in filtered_key_points:
                 formatted_response_data = []
                 formatted_response_data.append(
@@ -306,27 +326,32 @@ class GlobalSearch(BaseSearch):
                     + num_tokens(formatted_response_text, self.token_encoder)
                     > self.max_data_tokens
                 ):
+                    # 直到拼接的回答长度达到max_data_tokens
                     break
                 data.append(formatted_response_text)
                 total_tokens += num_tokens(formatted_response_text, self.token_encoder)
+            # 将回答转换为字符串
             text_data = "\n\n".join(data)
 
+            # 组装system prompt
             search_prompt = self.reduce_system_prompt.format(
                 report_data=text_data, response_type=self.response_type
             )
             if self.allow_general_knowledge:
                 search_prompt += "\n" + self.general_knowledge_inclusion_prompt
+            # 组装发送给LLM的message
             search_messages = [
                 {"role": "system", "content": search_prompt},
                 {"role": "user", "content": query},
             ]
-
+            # 调用LLM
             search_response = await self.llm.agenerate(
                 search_messages,
                 streaming=True,
                 callbacks=self.callbacks,  # type: ignore
                 **llm_kwargs,  # type: ignore
             )
+            # 返回结果
             return SearchResult(
                 response=search_response,
                 context_data=text_data,
