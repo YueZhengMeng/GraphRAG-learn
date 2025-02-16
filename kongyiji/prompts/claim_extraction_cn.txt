@@ -15,10 +15,10 @@
 主张描述：详细描述主张背后的理由，以及所有相关证据和引用。
 主张日期：主张提出的时间段（开始日期，结束日期）。开始日期和结束日期都应使用ISO-8601格式。如果主张是在单一日期而不是日期范围内提出的，将同一日期设置为开始日期和结束日期。如果日期未知，返回NONE。
 主张来源文本：与主张相关的原始文本的所有引用列表。
-将每个主张格式化为(<主体实体>{元组分隔符}<客体实体>{元组分隔符}<主张类型>{元组分隔符}<主张状态>{元组分隔符}<主张开始日期>{元组分隔符}<主张结束日期>{元组分隔符}<主张描述>{元组分隔符}<主张来源>)
-3. 以英文形式返回输出，作为步骤1和2中识别的所有主张的单个列表。使用**{记录分隔符}**作为列表分隔符。
+将每个主张格式化为(<主体实体>{tuple_delimiter}<客体实体>{tuple_delimiter}<主张类型>{tuple_delimiter}<主张状态>{tuple_delimiter}<主张开始日期>{tuple_delimiter}<主张结束日期>{tuple_delimiter}<主张描述>{tuple_delimiter}<主张来源>)
+3. 以英文形式返回输出，作为步骤1和2中识别的所有主张的单个列表。使用**{record_delimiter}**作为列表分隔符。
 
-4.完成后，输出{完成分隔符}
+4.完成后，输出{completion_delimiter}
 -示例-
 示例1：
 实体规范：组织
@@ -26,8 +26,8 @@
 文本：根据2022/01/10的一篇文章，公司A因参与政府机构B发布的多个公开招标而被罚款，涉嫌串通投标。该公司由人C所有，他被怀疑在2015年参与腐败活动。
 输出：
 
-(COMPANY A{元组分隔符}GOVERNMENT AGENCY B{元组分隔符}ANTI-COMPETITIVE PRACTICES{元组分隔符}TRUE{元组分隔符}2022-01-10T00:00:00{元组分隔符}2022-01-10T00:00:00{元组分隔符}根据2022/01/10发表的一篇文章，公司A被发现参与反竞争行为，因为它因在政府机构B发布的多个公开招标中串通投标而被罚款{元组分隔符}根据2022/01/10发表的一篇文章，公司A因参与政府机构B发布的多个公开招标而被罚款)
-{完成分隔符}
+(COMPANY A{tuple_delimiter}GOVERNMENT AGENCY B{tuple_delimiter}ANTI-COMPETITIVE PRACTICES{tuple_delimiter}TRUE{tuple_delimiter}2022-01-10T00:00:00{tuple_delimiter}2022-01-10T00:00:00{tuple_delimiter}根据2022/01/10发表的一篇文章，公司A被发现参与反竞争行为，因为它因在政府机构B发布的多个公开招标中串通投标而被罚款{tuple_delimiter}根据2022/01/10发表的一篇文章，公司A因参与政府机构B发布的多个公开招标而被罚款)
+{completion_delimiter}
 
 示例2：
 实体规范：公司A，人C
@@ -35,10 +35,10 @@
 文本：根据2022/01/10的一篇文章，公司A因参与政府机构B发布的多个公开招标而被罚款，涉嫌串通投标。该公司由人C所有，他被怀疑在2015年参与腐败活动。
 输出：
 
-(COMPANY A{元组分隔符}GOVERNMENT AGENCY B{元组分隔符}ANTI-COMPETITIVE PRACTICES{元组分隔符}TRUE{元组分隔符}2022-01-10T00:00:00{元组分隔符}2022-01-10T00:00:00{元组分隔符}根据2022/01/10发表的一篇文章，公司A被发现参与反竞争行为，因为它因在政府机构B发布的多个公开招标中串通投标而被罚款{元组分隔符}根据2022/01/10发表的一篇文章，公司A因参与政府机构B发布的多个公开招标而被罚款)
-{记录分隔符}
-(PERSON C{元组分隔符}NONE{元组分隔符}CORRUPTION{元组分隔符}SUSPECTED{元组分隔符}2015-01-01T00:00:00{元组分隔符}2015-12-30T00:00:00{元组分隔符}人C被怀疑在2015年参与腐败活动{元组分隔符}该公司由人C所有，他被怀疑在2015年参与腐败活动)
-{完成分隔符}
+(COMPANY A{tuple_delimiter}GOVERNMENT AGENCY B{tuple_delimiter}ANTI-COMPETITIVE PRACTICES{tuple_delimiter}TRUE{tuple_delimiter}2022-01-10T00:00:00{tuple_delimiter}2022-01-10T00:00:00{tuple_delimiter}根据2022/01/10发表的一篇文章，公司A被发现参与反竞争行为，因为它因在政府机构B发布的多个公开招标中串通投标而被罚款{tuple_delimiter}根据2022/01/10发表的一篇文章，公司A因参与政府机构B发布的多个公开招标而被罚款)
+{record_delimiter}
+(PERSON C{tuple_delimiter}NONE{tuple_delimiter}CORRUPTION{tuple_delimiter}SUSPECTED{tuple_delimiter}2015-01-01T00:00:00{tuple_delimiter}2015-12-30T00:00:00{tuple_delimiter}人C被怀疑在2015年参与腐败活动{tuple_delimiter}该公司由人C所有，他被怀疑在2015年参与腐败活动)
+{completion_delimiter}
 
 -真实数据-
 使用以下输入回答您的问题。
