@@ -41,6 +41,10 @@ def build_community_context(
 
     The calculated weight is added as an attribute to the community reports and added to the context data table.
     """
+    # 核心逻辑
+    # 基于相关社区的报告，生成上下文
+
+    # 本教程中entities参数为空，因此community_weight_name参数也不会被计算。
     if (
         entities
         and len(community_reports) > 0
@@ -58,6 +62,7 @@ def build_community_context(
             normalize=normalize_community_weight,
         )
 
+    # 读取相关社区的报告，并过滤掉不符合要求的报告
     selected_reports = [
         report
         for report in community_reports
@@ -70,6 +75,7 @@ def build_community_context(
         random.seed(random_state)
         random.shuffle(selected_reports)
 
+    # 准备上下文中社区报告表的表头
     # add context header
     current_context_text = f"-----{context_name}-----" + "\n"
 
@@ -88,13 +94,16 @@ def build_community_context(
     if include_community_rank:
         header.append(community_rank_name)
 
+    # 生成上下文中社区报告表的开头部分
     current_context_text += column_delimiter.join(header) + "\n"
     current_tokens = num_tokens(current_context_text, token_encoder)
     current_context_records = [header]
     all_context_text = []
     all_context_records = []
 
+    # 对于每个报告
     for report in selected_reports:
+        # 提取id与title到临时变量
         new_context = [
             report.short_id,
             report.title,
@@ -103,16 +112,23 @@ def build_community_context(
                 for field in attribute_cols
             ],
         ]
+        # 提取摘要，或者全文
         new_context.append(
             report.summary if use_community_summary else report.full_content
         )
         if include_community_rank:
             new_context.append(str(report.rank))
+
+        # 加入分隔符，得到当前社区报告的上下文
         new_context_text = column_delimiter.join(new_context) + "\n"
 
         new_tokens = num_tokens(new_context_text, token_encoder)
+
+        # 如果当前社区报告加上新的社区报告后超过了最大token数
         if current_tokens + new_tokens > max_tokens:
             # convert the current context records to pandas dataframe and sort by weight and rank if exist
+            # 如果有社区报告上下文，则转换为pandas df并排序
+            # >1 是因为current_context_records[0]是表头
             if len(current_context_records) > 1:
                 record_df = _convert_report_context_to_df(
                     context_records=current_context_records[1:],
@@ -125,9 +141,12 @@ def build_community_context(
 
             else:
                 record_df = pd.DataFrame()
+
+            # 将排序后的上下文转换回文本格式的数据表
             current_context_text = record_df.to_csv(index=False, sep=column_delimiter)
 
             if single_batch:
+                # 返回上下文文本与数据表
                 return current_context_text, {context_name.lower(): record_df}
 
             all_context_text.append(current_context_text)
@@ -142,6 +161,7 @@ def build_community_context(
             )
             current_tokens = num_tokens(current_context_text, token_encoder)
             current_context_records = [header]
+        # 如果当前社区报告加上新的社区报告后没有超过最大token数，则加入当前社区报告，继续循环
         else:
             current_context_text += new_context_text
             current_tokens += new_tokens

@@ -37,6 +37,7 @@ def build_text_unit_context(
     # add context header
     current_context_text = f"-----{context_name}-----" + "\n"
 
+    # 构建表头
     # add header
     header = ["id", "text"]
     attribute_cols = (
@@ -49,7 +50,9 @@ def build_text_unit_context(
     current_tokens = num_tokens(current_context_text, token_encoder)
     all_context_records = [header]
 
+    # 对于每个文本单元
     for unit in text_units:
+        # 提取信息
         new_context = [
             unit.short_id,
             unit.text,
@@ -58,22 +61,27 @@ def build_text_unit_context(
                 for field in attribute_cols
             ],
         ]
+        # 加入分隔符，转换为字符串
         new_context_text = column_delimiter.join(new_context) + "\n"
         new_tokens = num_tokens(new_context_text, token_encoder)
 
+        # 如果加上新的记录后超过最大限制，则跳出循环
         if current_tokens + new_tokens > max_tokens:
             break
-
+        # 否则，继续添加记录
         current_context_text += new_context_text
         all_context_records.append(new_context)
         current_tokens += new_tokens
 
+    # 如果有记录，则转换为DataFrame
+    # >1 是因为all_context_records[0]是表头
     if len(all_context_records) > 1:
         record_df = pd.DataFrame(
             all_context_records[1:], columns=cast(Any, all_context_records[0])
         )
     else:
         record_df = pd.DataFrame()
+    # 返回上下文文本和DataFrame
     return current_context_text, {context_name.lower(): record_df}
 
 

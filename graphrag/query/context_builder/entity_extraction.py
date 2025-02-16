@@ -44,6 +44,9 @@ def map_query_to_entities(
     oversample_scaler: int = 2,
 ) -> list[Entity]:
     """Extract entities that match a given query using semantic similarity of text embeddings of query and entity descriptions."""
+    # 核心逻辑
+    # 基于query和实体description进行语义相似度匹配
+    # 返回相关匹配的实体信息
     if include_entity_names is None:
         include_entity_names = []
     if exclude_entity_names is None:

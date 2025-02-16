@@ -38,6 +38,10 @@ def build_entity_context(
     if len(selected_entities) == 0:
         return "", pd.DataFrame()
 
+    # 核心逻辑
+    # 构建实体上下文
+
+    # 创建表头
     # add headers
     current_context_text = f"-----{context_name}-----" + "\n"
     header = ["id", "entity", "description"]
@@ -53,7 +57,10 @@ def build_entity_context(
     current_tokens = num_tokens(current_context_text, token_encoder)
 
     all_context_records = [header]
+
+    # 对于每个相关实体
     for entity in selected_entities:
+        # 提取信息到临时变量
         new_context = [
             entity.short_id if entity.short_id else "",
             entity.title,
@@ -68,21 +75,26 @@ def build_entity_context(
                 else ""
             )
             new_context.append(field_value)
+        # 插入分隔符，转为字符串
         new_context_text = column_delimiter.join(new_context) + "\n"
         new_tokens = num_tokens(new_context_text, token_encoder)
+        # 如果当前总token数加上新添加的token数大于最大限制，则跳出循环
         if current_tokens + new_tokens > max_tokens:
             break
+        # 否则，继续添加
         current_context_text += new_context_text
         all_context_records.append(new_context)
         current_tokens += new_tokens
 
+    # 如果有上下文，则创建一个DataFrame
+    # >1 是因为all_context_records[0]是表头
     if len(all_context_records) > 1:
         record_df = pd.DataFrame(
             all_context_records[1:], columns=cast(Any, all_context_records[0])
         )
     else:
         record_df = pd.DataFrame()
-
+    # 返回上下文文本和DataFrame
     return current_context_text, record_df
 
 
@@ -162,6 +174,10 @@ def build_relationship_context(
     context_name: str = "Relationships",
 ) -> tuple[str, pd.DataFrame]:
     """Prepare relationship data tables as context data for system prompt."""
+    # 核心逻辑
+    # 找出与当前实体相关的关系
+    # 其中会根据short_id顺序先取出关系，然后根据links值、weight值或者rank值进行排序
+    # 因此selected_relationships列表的顺序未必和selected_entities一致
     selected_relationships = _filter_relationships(
         selected_entities=selected_entities,
         relationships=relationships,
@@ -172,6 +188,7 @@ def build_relationship_context(
     if len(selected_entities) == 0 or len(selected_relationships) == 0:
         return "", pd.DataFrame()
 
+    # 构建表头
     # add headers
     current_context_text = f"-----{context_name}-----" + "\n"
     header = ["id", "source", "target", "description"]
@@ -190,6 +207,7 @@ def build_relationship_context(
 
     all_context_records = [header]
     for rel in selected_relationships:
+        # 提取关系信息
         new_context = [
             rel.short_id if rel.short_id else "",
             rel.source,
@@ -205,10 +223,13 @@ def build_relationship_context(
                 else ""
             )
             new_context.append(field_value)
+        # 加入分隔符，转为字符串
         new_context_text = column_delimiter.join(new_context) + "\n"
         new_tokens = num_tokens(new_context_text, token_encoder)
+        # 如果加上新的记录后超过最大限制，则跳出循环
         if current_tokens + new_tokens > max_tokens:
             break
+        # 否则继续添加记录
         current_context_text += new_context_text
         all_context_records.append(new_context)
         current_tokens += new_tokens

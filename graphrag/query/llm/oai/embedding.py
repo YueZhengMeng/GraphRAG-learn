@@ -76,13 +76,20 @@ class OpenAIEmbedding(BaseTextEmbedding, OpenAILLMImpl):
         For text longer than max_tokens, chunk texts into max_tokens, embed each chunk, then combine using weighted average.
         Please refer to: https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
         """
+        # 核心逻辑
+        # query时在这里调用embedding模型
+        # 调试时在这里打断点
+
+        # 将text进行tokenize，如果超过max_tokens，则进行分块
         token_chunks = chunk_text(
             text=text, token_encoder=self.token_encoder, max_tokens=self.max_tokens
         )
         chunk_embeddings = []
         chunk_lens = []
+        # embedding每一个分块
         for chunk in token_chunks:
             try:
+                # 注意这里的chunk_len是原始文本的str len
                 embedding, chunk_len = self._embed_with_retry(chunk, **kwargs)
                 chunk_embeddings.append(embedding)
                 chunk_lens.append(chunk_len)
@@ -94,7 +101,9 @@ class OpenAIEmbedding(BaseTextEmbedding, OpenAILLMImpl):
                 )
 
                 continue
+        # 基于分块长度进行加权平均
         chunk_embeddings = np.average(chunk_embeddings, axis=0, weights=chunk_lens)
+        # 除以L2范式进行归一化
         chunk_embeddings = chunk_embeddings / np.linalg.norm(chunk_embeddings)
         return chunk_embeddings.tolist()
 
@@ -122,8 +131,11 @@ class OpenAIEmbedding(BaseTextEmbedding, OpenAILLMImpl):
     def _embed_with_retry(
         self, text: str | tuple, **kwargs: Any
     ) -> tuple[list[float], int]:
+        # 核心逻辑
+        # 调用embedding模型，编码一个长度不超过上限的文本片段
         embeddings = None
         llm_type, *models = self.model.split('.')
+        # 如果是预设的embedding模型
         if is_valid_llm_type(llm_type):
             embeddings = use_embeddings(llm_type, model='.'.join(models))
 
@@ -139,7 +151,10 @@ class OpenAIEmbedding(BaseTextEmbedding, OpenAILLMImpl):
                     if embeddings is not None:
                         if isinstance(text, tuple):
                             text = self.token_encoder.decode(text)
+                        # 调用预设的embedding模型
                         return (embeddings.embed_query(text), len(text))
+                    # 如果不是预设的embedding模型
+                    # 通过OpenAI接口调用
                     embedding = (
                         self.sync_client.embeddings.create(  # type: ignore
                             input=text,

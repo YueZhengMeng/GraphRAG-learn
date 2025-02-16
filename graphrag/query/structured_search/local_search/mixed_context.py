@@ -118,10 +118,17 @@ class LocalSearchMixedContext(LocalContextBuilder):
 
         Build a context by combining community reports and entity/relationship/covariate tables, and text units using a predefined ratio set by summary_prop.
         """
+        # 核心逻辑
+
+        # 上下文必须包括的实体
         if include_entity_names is None:
             include_entity_names = []
+        # 上下文必须排除的实体
         if exclude_entity_names is None:
             exclude_entity_names = []
+
+        # community_prop和text_unit_prop分别是社区报告和文本片段最大可以占用到max_tokens的比例
+        # local_prop = 1 - community_prop - text_unit_prop 是 实体-关系-协变量上下文可以占用的比例
         if community_prop + text_unit_prop > 1:
             value_error = (
                 "The sum of community_prop and text_unit_prop should not exceed 1."
@@ -136,6 +143,9 @@ class LocalSearchMixedContext(LocalContextBuilder):
             )
             query = f"{query}\n{pre_user_questions}"
 
+        # 核心逻辑
+        # 基于query和实体description进行语义相似度匹配
+        # 返回相关匹配的实体信息
         selected_entities = map_query_to_entities(
             query=query,
             text_embedding_vectorstore=self.entity_text_embeddings,
@@ -152,6 +162,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
         final_context = list[str]()
         final_context_data = dict[str, pd.DataFrame]()
 
+        # 本教程中不会触发
         if conversation_history:
             # build conversation history context
             (
@@ -172,6 +183,8 @@ class LocalSearchMixedContext(LocalContextBuilder):
                 )
 
         # build community context
+        # 核心逻辑
+        # 生成社区上下文
         community_tokens = max(int(max_tokens * community_prop), 0)
         community_context, community_context_data = self._build_community_context(
             selected_entities=selected_entities,
@@ -188,6 +201,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             final_context_data = {**final_context_data, **community_context_data}
 
         # build local (i.e. entity-relationship-covariate) context
+        # 生成本地上下文，主要包括实体、关系和协变量
         local_prop = 1 - community_prop - text_unit_prop
         local_tokens = max(int(max_tokens * local_prop), 0)
         local_context, local_context_data = self._build_local_context(
@@ -233,6 +247,8 @@ class LocalSearchMixedContext(LocalContextBuilder):
         if len(selected_entities) == 0 or len(self.community_reports) == 0:
             return ("", {context_name.lower(): pd.DataFrame()})
 
+        # 核心逻辑
+        # 统计selected_entities中各个实体属于哪个社区，以及这些社区出现了多少次
         community_matches = {}
         for entity in selected_entities:
             # increase count of the community that this entity belongs to
@@ -243,6 +259,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
                     )
 
         # sort communities by number of matched entities and rank
+        # 根据相关实体的个数与社区rank，对社区进行排序
         selected_communities = [
             self.community_reports[community_id]
             for community_id in community_matches
@@ -258,6 +275,8 @@ class LocalSearchMixedContext(LocalContextBuilder):
         )
         for community in selected_communities:
             del community.attributes["matches"]  # type: ignore
+
+        # 核心逻辑
         """
         1. 根据topk的实体，找出满足条件的社区
         2. 社区 -> sort(matched, rank) -> report, 取出相关字段拼接在一起，作为prompt内容的一部分
@@ -277,6 +296,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
         if isinstance(context_text, list) and len(context_text) > 0:
             context_text = "\n\n".join(context_text)
 
+        # 本教程中不会触发
         if return_candidate_context:
             candidate_context_data = get_candidate_communities(
                 selected_entities=selected_entities,
@@ -301,6 +321,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
                     context_data[context_key] = candidate_context_data
                 else:
                     context_data[context_key]["in_context"] = True
+        # 返回社区上下文文本与相关数据
         return (str(context_text), context_data)
 
     def _build_text_unit_context(
@@ -318,14 +339,24 @@ class LocalSearchMixedContext(LocalContextBuilder):
         selected_text_units = list[TextUnit]()
         # for each matching text unit, rank first by the order of the entities that match it, then by the number of matching relationships
         # that the text unit has with the matching entities
+
+        # entity_order是文本单元相关的实体的顺序，该顺序是向量数据库检索返回的顺序
+        # 越靠前，说明该实体与query的相关程度越高
+        # num_relationships是相关性最高的实体在该文本单元中的关系数量
+
+        # 对于每个相关实体
         for index, entity in enumerate(selected_entities):
+            # 找出实体来源的所有文本单元
             if entity.text_unit_ids:
+                # 对于每个来源文本单元
                 for text_id in entity.text_unit_ids:
+                    # 如果这个文本单元还没有被添加到selected_text_units中，并且这个文本单元在self.text_units中存在
                     if (
                         text_id not in [unit.id for unit in selected_text_units]
                         and text_id in self.text_units
                     ):
                         selected_unit = self.text_units[text_id]
+                        # 计算该文本单元中与相关实体的匹配关系数量
                         num_relationships = count_relationships(
                             selected_unit, entity, self.relationships
                         )
@@ -338,6 +369,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
                         selected_text_units.append(selected_unit)
 
         # sort selected text units by ascending order of entity order and descending order of number of relationships
+        # 优先级：实体相关度顺序 -> 关系数量
         selected_text_units.sort(
             key=lambda x: (
                 x.attributes["entity_order"],  # type: ignore
@@ -357,7 +389,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             context_name=context_name,
             column_delimiter=column_delimiter,
         )
-
+        # 本教程中不会触发
         if return_candidate_context:
             candidate_context_data = get_candidate_text_units(
                 selected_entities=selected_entities,
@@ -380,6 +412,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
                     context_data[context_key] = candidate_context_data
                 else:
                     context_data[context_key]["in_context"] = True
+        # 返回文本上下文与相关数据
         return (str(context_text), context_data)
 
     def _build_local_context(
@@ -395,6 +428,9 @@ class LocalSearchMixedContext(LocalContextBuilder):
         column_delimiter: str = "|",
     ) -> tuple[str, dict[str, pd.DataFrame]]:
         """Build data context for local search prompt combining entity/relationship/covariate tables."""
+
+        # 核心逻辑
+        # 构建实体上下文，逐个添加实体直到上下文长度达到max_tokens
         # build entity context
         entity_context, entity_context_data = build_entity_context(
             selected_entities=selected_entities,
@@ -412,13 +448,17 @@ class LocalSearchMixedContext(LocalContextBuilder):
         final_context = []
         final_context_data = {}
 
+        # 逐个加入相关实体的关系信息与声明信息，直到达到max_tokens
         # gradually add entities and associated metadata to the context until we reach limit
         for entity in selected_entities:
+            # 每轮循环都重新构建上下文
             current_context = []
             current_context_data = {}
+            # 将本轮循环的实体加入added_entities中
             added_entities.append(entity)
 
             # build relationship context
+            # 基于added_entities重新构建关系上下文
             (
                 relationship_context,
                 relationship_context_data,
@@ -440,6 +480,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             )
 
             # build covariate context
+            # 基于added_entities重新构建声明上下文
             for covariate in self.covariates:
                 covariate_context, covariate_context_data = build_covariates_context(
                     selected_entities=added_entities,
@@ -453,10 +494,11 @@ class LocalSearchMixedContext(LocalContextBuilder):
                 current_context.append(covariate_context)
                 current_context_data[covariate.lower()] = covariate_context_data
 
+            # 如果当前上下文长度大于max_tokens，则跳出循环
             if total_tokens > max_tokens:
                 log.info("Reached token limit - reverting to previous context state")
                 break
-
+            # 否则，设置本轮循环的上下文到最终上下文
             final_context = current_context
             final_context_data = current_context_data
 
@@ -464,6 +506,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
         final_context_text = entity_context + "\n\n" + "\n\n".join(final_context)
         final_context_data["entities"] = entity_context_data
 
+        # 本教程中不会触发
         if return_candidate_context:
             # we return all the candidate entities/relationships/covariates (not only those that were fitted into the context window)
             # and add a tag to indicate which records were included in the context window
@@ -497,4 +540,5 @@ class LocalSearchMixedContext(LocalContextBuilder):
         else:
             for key in final_context_data:
                 final_context_data[key]["in_context"] = True
+        # 返回最终上下文和上下文数据
         return (final_context_text, final_context_data)

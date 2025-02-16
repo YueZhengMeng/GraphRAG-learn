@@ -133,11 +133,16 @@ snapshots:
   top_level_nodes: false
 
 local_search:
-  # text_unit_prop: 0.5
-  # community_prop: 0.1
+  text_unit_prop: 0.4
+  community_prop: 0.3
+  # local_prop 等于 1 - text_unit_prop - community_prop
   # conversation_history_max_turns: 5
-  # top_k_mapped_entities: 10
-  # top_k_relationships: 10
+  # 设置相关实体搜索时得到的实体个数
+  # 源码里设置了oversample_scaler=2，即实际返回的实体个数是oversample_scaler * top_k_mapped_entities
+  # 我也不知道为什么，修改top_k_mapped_entities不生效，运行时读取后值仍为10
+  # 但是修改top_k_relationships可以生效
+  top_k_mapped_entities: 5
+  top_k_relationships: 5
   # llm_temperature: 0 # temperature for sampling
   llm_top_p: 0.9 # top-p sampling
   # llm_n: 1 # Number of completions to generate
