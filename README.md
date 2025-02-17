@@ -36,13 +36,95 @@
 这个包用于在linux环境下调度协程，不能在windows上安装。  
 该包在windows环境下不会被调用，对项目运行无影响。
 
+# 项目使用说明
+
+## 环境准备
+```shell
+# 1.安装anaconda
+   # 下载anacona，可以下载免费了，填入邮箱，然后通过邮箱收到的链接下载
+   # 地址：https://www.anaconda.com/download
+   
+# 2.创建python环境
+conda create -n graphrag python=3.10
+
+# 3.激活环境
+conda activate graphrag
+
+# 4. 下载本项目
+git clone https://github.com/YueZhengMeng/graphrag-learn
+cd graphrag-learn
+
+# 5. 安装graphrag所需环境
+# 注意：windows平台安装去掉uvloop这个包
+pip install -r requirements.txt
+```
+
+## 实例展示
+
+### 准备数据集
+《孔乙己》小说原文已存储在`data/kongyiji.txt`中，该文件为utf-8编码
+
+### 初始化项目文件夹
+```shell
+mkdir -p ./kongyiji
+python -m graphrag.index --init --root ./kongyiji
+```
+
+### 准备文本数据
+```shell
+mkdir -p ./kongyiji/input
+cp data/kongyiji.txt ./kongyiji/input/
+```
+
+### 复制配置文件与中文prompts
+```shell
+cp extra_data/settings.yaml ./kongyiji
+cp extra_data/claim_extraction_cn.txt ./kongyiji/prompts
+cp extra_data/community_report_cn.txt ./kongyiji/prompts
+cp extra_data/entity_extraction_cn.txt ./kongyiji/prompts
+cp extra_data/global_map_system_prompt_cn.txt ./kongyiji/prompts
+cp extra_data/global_reduce_system_prompt_cn.txt ./kongyiji/prompts
+cp extra_data/local_query_prompt_cn.txt ./kongyiji/prompts
+cp extra_data/summarize_descriptions_cn.txt ./kongyiji/prompts
+```
+
+### 构建索引
+配置resume参数之后，失败了重新跑一遍就可以从断点继续，避免从头开始
+```shell
+python -m graphrag.index --root ./kongyiji --resume kongyiji -v
+```
+
+### 查询
+通过--data指定读取哪个索引，否则会读取`kongyiji`目录下的第一个版本
+#### 本地查询
+```shell
+python -m graphrag.query --root ./kongyiji --data ./kongyiji/output/kongyiji/artifacts --method local "孔乙己与丁举人的关系"
+```
+#### 全局查询
+```shell
+python -m graphrag.query --root ./kongyiji --data ./kongyiji/output/kongyiji/artifacts --method global "孔乙己与丁举人的关系"
+```
+
+### 知识图谱可视化
+基于`pyvis`实现  
+代码见`./visualize_graph/visualize_graph.ipynb`  
+可视化结果可以直接在`Jupyter Notebook`界面查看，也可以用浏览器打开生成的html文件  
+界面第一次显示有点慢，推测与某些必要的css与js文件在外网有关  
+第一次显示后，当前路径下会出现`lib`文件夹，其中缓存了这些css与js文件  
+确保`lib`文件夹与涉及`pyvis`的`ipynb`文件或`html`文件在同一文件夹下，之后的页面会自动加载这些文件，速度会变快  
+鼠标放在节点或边上，会显示对应的详细信息  
+节点可以拖动，拖动结束后会自动调整位置与图的形状
+
 ## 个人感想与建议
 微软的程序员们，在这个项目中，展示了其登峰造极的软件工程学水平。  
 但显然，他们没有尝试站在初学者的角度，考虑学习阶梯与成本的问题。  
 此外，该项目的早期实验性质也很明显，配置文件、代码注释和文档，都存在巨大的完善空间。  
 以上并非是我一个人的观点，另一个GraphRAG的精简实现项目[nano-graphrag](https://github.com/gusye1234/nano-graphrag)的作者也给出了近似的评价。  
-
+  
 GraphRAG的核心算法，其实并不复杂，用两页PPT展示其中大约5个关键步骤就能够讲明白。  
-因此，我个人建议大家直接阅读[nano-graphrag](https://github.com/gusye1234/nano-graphrag)项目。   
+索引构建部分，阅读本项目中`./visualize_graph/visualize_graph.ipynb`文件展示的索引构建结果、可视化结果、以及说明性注释即可。  
+查询部分，从`graphrag/query/cli.py`文件开始，阅读`LocalSearch`与`GlobalSearch`两种搜索引擎的`search`方法的源码与注释，尤其是其中的`context builder`的实现即可。  
+  
+综上，我个人建议大家直接阅读[nano-graphrag](https://github.com/gusye1234/nano-graphrag)项目。   
 一方面是因为[nano-graphrag](https://github.com/gusye1234/nano-graphrag)只用几百行简单直白的代码就实现了GraphRAG的核心算法，另一方面是因为更适合应用于实际生产场景的[LightRAG](https://github.com/HKUDS/LightRAG)框架也是基于[nano-graphrag](https://github.com/gusye1234/nano-graphrag)二次开发的。  
 我之后也会阅读和解析以上两个项目，并分析自己的学习笔记。
