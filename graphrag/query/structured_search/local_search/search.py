@@ -116,9 +116,9 @@ class LocalSearch(BaseSearch):
 
         """
         local_search:
-            1. 对构建索引部分的实体构建向量，便于根据query去查询 
-            2. 根据query检索出相关的topk的实体，每个实体与社区信息，协变量，实体关系等是存在对应关系的。
-            3. 构建社区信息，实体信息，协变量信息，实体关系信息的相关数据
+            1. 构建索引时，embedding每个实体的description向量，便于之后根据query去查询 
+            2. 根据query检索出语义相似度topk的实体。每个实体信息与社区、关系、协变量、来源文本片段等信息是汇总过对应关系的。
+            3. 构建包括社区信息、实体信息、关系信息、协变量信息、来源文本片段信息的上下文
             4. 填充prompt模板
             5. 调用大模型
             6. 结果解析并返回
@@ -126,7 +126,8 @@ class LocalSearch(BaseSearch):
         start_time = time.time()
         search_prompt = ""
         # 核心逻辑
-        # 查询query相关的实体信息、关系信息、文本片段
+        # 查询query相关的实体信息，进而获取相关的社区信息、关系信息、文本片段
+        # 核心源码见：graphrag/query/structured_search/local_search/mixed_context.py
         # 并且拼接为context_text
         context_text, context_records = self.context_builder.build_context(
             query=query,
@@ -146,7 +147,6 @@ class LocalSearch(BaseSearch):
                 {"role": "user", "content": query},
             ]
             # 调用大模型
-            # llm_execute()
             response = self.llm.generate(
                 messages=search_messages,
                 streaming=True,

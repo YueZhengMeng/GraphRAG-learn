@@ -137,6 +137,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
 
         # map user query to entities
         # if there is conversation history, attached the previous user questions to the current query
+        # 本教程中不会触发
         if conversation_history:
             pre_user_questions = "\n".join(
                 conversation_history.get_user_turns(conversation_history_max_turns)
@@ -144,8 +145,8 @@ class LocalSearchMixedContext(LocalContextBuilder):
             query = f"{query}\n{pre_user_questions}"
 
         # 核心逻辑
-        # 基于query和实体description进行语义相似度匹配
-        # 返回相关匹配的实体信息
+        # 基于query和实体description的embedding进行语义相似度匹配
+        # 返回相关的实体信息，顺序是语义相似度从高到低
         selected_entities = map_query_to_entities(
             query=query,
             text_embedding_vectorstore=self.entity_text_embeddings,
@@ -220,6 +221,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             final_context_data = {**final_context_data, **local_context_data}
 
         # build text unit context
+        # 生成文本单元上下文
         text_unit_tokens = max(int(max_tokens * text_unit_prop), 0)
         text_unit_context, text_unit_context_data = self._build_text_unit_context(
             selected_entities=selected_entities,
@@ -277,10 +279,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             del community.attributes["matches"]  # type: ignore
 
         # 核心逻辑
-        """
-        1. 根据topk的实体，找出满足条件的社区
-        2. 社区 -> sort(matched, rank) -> report, 取出相关字段拼接在一起，作为prompt内容的一部分
-        """
+        # 按顺序拼接社区信息，直到达到max_tokens
         context_text, context_data = build_community_context(
             community_reports=selected_communities,
             token_encoder=self.token_encoder,
@@ -381,6 +380,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             del unit.attributes["entity_order"]  # type: ignore
             del unit.attributes["num_relationships"]  # type: ignore
 
+        # 按顺序拼接组装文本单元上下文，直到到达max_tokens
         context_text, context_data = build_text_unit_context(
             text_units=selected_text_units,
             token_encoder=self.token_encoder,
@@ -389,6 +389,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             context_name=context_name,
             column_delimiter=column_delimiter,
         )
+
         # 本教程中不会触发
         if return_candidate_context:
             candidate_context_data = get_candidate_text_units(
@@ -503,6 +504,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
             final_context_data = current_context_data
 
         # attach entity context to final context
+        # 插入分隔符，转为字符串，作为最终上下文
         final_context_text = entity_context + "\n\n" + "\n\n".join(final_context)
         final_context_data["entities"] = entity_context_data
 
