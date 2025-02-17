@@ -122,6 +122,7 @@ class GlobalSearch(BaseSearch):
         # 首先根据每个社区内包含的实体所关联的文本切片数量，计算社区权重。关联文本越多，权重越高。
         # 然后，根据社区权重和总结社区报告时生成的rank，对社区报告进行降序排序。
         # 最后，逐个将社区报告加入上下文中，直到上下文长度达到max_tokens。
+        # 核心源码见：graphrag/query/structured_search/global_search/community_context.py
         context_chunks, context_records = self.context_builder.build_context(
             conversation_history=conversation_history, **self.context_builder_params
         )
@@ -130,7 +131,7 @@ class GlobalSearch(BaseSearch):
             for callback in self.callbacks:
                 callback.on_map_response_start(context_chunks)  # type: ignore
 
-        # 基于协程并发执行对每个社区报告上下文片段的总结
+        # 基于协程并发执行对每个社区报告上下文片段的总结，生成临时回答
         # 通过大模型，在社区报告中提取和总结与用户query相关的信息
         map_responses = await asyncio.gather(*[
             self._map_response_single_batch(
