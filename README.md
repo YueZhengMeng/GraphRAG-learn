@@ -120,6 +120,11 @@ python -m graphrag.query --root ./kongyiji --data ./kongyiji/output/kongyiji/art
 但显然，他们没有尝试站在初学者的角度，考虑学习阶梯与成本的问题。  
 此外，该项目的早期实验性质也很明显，配置文件、代码注释和文档，都存在巨大的完善空间。  
 以上并非是我一个人的观点，另一个GraphRAG的精简实现项目[nano-graphrag](https://github.com/gusye1234/nano-graphrag)的作者也给出了近似的评价。  
+
+在我看来，GraphRAG正如其论文标题《From Local to Global: A Graph RAG Approach to Query-Focused Summarization》所描述的那样，
+是一次关于如何通过RAG实现文本宏观语义理解与总结性问答的探索性尝试，而非具备实际应用价值的高效算法或工程化框架。  
+尤其是当我发现，每次添加新文本，都需要重建整个索引时，我更加确信了我的判断————毕竟，RAG技术最关键的实践价值，
+就是通过动态、实时、低成本的增量式知识注入来扩展大语言模型的知识边界。
   
 GraphRAG的核心算法，其实并不复杂，用两页PPT展示其中大约5个关键步骤就能够讲明白。  
 索引构建部分，阅读本项目中`./visualize_graph/visualize_graph.ipynb`文件展示的索引构建结果、可视化结果、以及说明性注释即可。  
@@ -127,4 +132,7 @@ GraphRAG的核心算法，其实并不复杂，用两页PPT展示其中大约5�
   
 综上，我个人建议大家直接阅读[nano-graphrag](https://github.com/gusye1234/nano-graphrag)项目。   
 一方面是因为[nano-graphrag](https://github.com/gusye1234/nano-graphrag)只用几百行简单直白的代码就实现了GraphRAG的核心算法，另一方面是因为更适合应用于实际生产场景的[LightRAG](https://github.com/HKUDS/LightRAG)框架也是基于[nano-graphrag](https://github.com/gusye1234/nano-graphrag)二次开发的。  
-我之后也会阅读和解析以上两个项目，并分析自己的学习笔记。
+我之后也会阅读和解析LightRAG项目，并分享自己的学习笔记。
+
+## 更新
+LightRAG个人学习笔记项目已完成，链接：https://github.com/YueZhengMeng/LightRAG-learn
